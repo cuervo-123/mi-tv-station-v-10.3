@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THE APPTV CENTRAL — Tech Blue + Link Box Pro</title>
+
+  <style>
+    :root{
+      --bg:#050a12;
+      --bg-soft:#0b1224;
+      --card:#0f1b33;
+      --accent:#1f8bff;
+      --accent-2:#4ac3ff;
+      --text:#eaf4ff;
+      --text-dim:#93a4c4;
+      --border:#1b2b4a;
+      --radius:12px;
+      --shadow:0 0 15px rgba(31,139,255,.25);
+      --ok:#21d07a;
+      --warn:#f6b73c;
+      --danger:#ff6b6b;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body {
+      margin:0; padding:0;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% -20%, #0b172e 0%, #050a12 40%, #040814 100%);
+    }
+    header, main, footer { padding: 1rem; }
+    header{
+      background: linear-gradient(180deg, #0d162b 0%, #0a1022 100%);
+      border-bottom:1px solid var(--border);
+      border-radius:0 0 var(--radius) var(--radius);
+      box-shadow: var(--shadow);
+    }
+    h1{ margin:0 0 .75rem; color: var(--accent-2); letter-spacing:.3px; text-shadow: 0 0 10px rgba(74,195,255,.45); }
+
+    /* Inputs */
+    #buscador,
+    #youtube-controls input,
+    #dualUrl1, #dualUrl2,
+    #cargarArchivo{
+      width:100%;
+      padding:.55rem .7rem;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#0d182f;
+      color:var(--text);
+      outline:none;
+      transition:border-color .2s ease, box-shadow .2s ease;
+    }
+    #buscador:focus,
+    #youtube-controls input:focus,
+    #dualUrl1:focus, #dualUrl2:focus{
+      border-color: var(--accent-2);
+      box-shadow: 0 0 10px rgba(74,195,255,.25) inset;
+    }
+
+    /* Carrusel */
+    #carrusel-wrapper { position: relative; }
+    #canales-inferiores {
+      display:flex; flex-wrap:nowrap; overflow-x:auto; gap:.5rem;
+      padding:1rem; background: var(--card); scroll-behavior:smooth;
+      border:1px solid var(--border); border-radius: var(--radius);
+      box-shadow: inset 0 0 10px rgba(31,139,255,.12);
+    }
+    .canal{
+      background: var(--accent); color:#fff;
+      border-radius: 10px; padding: .5rem 1rem;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .canal:hover{ background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(74,195,255,.35); }
+    .flecha-carrusel {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 1.4rem; color: #fff;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--accent);
+      border-radius: 50%; width: 46px; height: 46px;
+      cursor: pointer; z-index: 10; display:grid; place-items:center;
+      transition: all .25s ease;
+    }
+    .flecha-carrusel:hover{ background: var(--accent); box-shadow: 0 0 10px rgba(74,195,255,.45); }
+    .flecha-izquierda { left: 5px; }
+    .flecha-derecha { right: 5px; }
+
+    /* Rejilla de monitores */
+    .player-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem; margin-bottom: 1rem;
+    }
+    .player-container {
+      position: relative; width: 100%; height: 30vh;
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+    video, .player-container iframe { width: 100%; height: 100%; object-fit: cover; border:0; }
+
+    /* Botones / controles */
+    .botones-panel { margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    button {
+      padding: 0.45rem .8rem;
+      background: var(--accent);
+      border: none; border-radius: 10px;
+      color: #fff; cursor: pointer; font-weight: 600; letter-spacing:.2px;
+      transition: transform .15s ease, box-shadow .25s ease, background .2s ease;
+    }
+    button:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(74,195,255,.35); }
+
+    /* Link Box */
+    .linkbox{
+      margin-top:.5rem;
+      background:#0c1730;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:.6rem;
+      box-shadow: inset 0 0 10px rgba(31,139,255,.12);
+    }
+    .linkbox-head{
+      display:flex; gap:.5rem; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      margin:.2rem .2rem .6rem;
+    }
+    .linkbox-title{ color:var(--text-dim); font-size:.9rem; display:flex; align-items:center; gap:.5rem; }
+    .linkbox-tools{ display:flex; gap:.4rem; flex-wrap:wrap; }
+    .lb-filter{
+      padding:.4rem .6rem; border-radius:8px; border:1px solid var(--border); background:#0d182f; color:var(--text);
+      min-width:220px;
+    }
+    .linkbox-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap:.6rem;
+    }
+    .site-card{
+      display:flex; gap:.6rem; align-items:center;
+      background: linear-gradient(180deg, #0f1b33 0%, #0b1530 100%);
+      border:1px solid var(--border);
+      border-radius:12px; padding:.6rem;
+      cursor:pointer; user-select:none;
+      transition:border-color .2s ease, box-shadow .2s ease, transform .12s ease;
+      min-height:64px;
+    }
+    .site-card:hover{ border-color: var(--accent-2); box-shadow: 0 6px 18px rgba(74,195,255,.25); transform: translateY(-1px); }
+    .site-card.selected{
+      border-color: var(--ok);
+      box-shadow: 0 0 0 2px rgba(33,208,122,.35), 0 10px 24px rgba(33,208,122,.18);
+      background: linear-gradient(180deg, #0f1b33 0%, #0a1d2a 100%);
+    }
+    .site-ico{
+      width:28px; height:28px; border-radius:6px; flex:0 0 28px;
+      background:#0b1224; display:grid; place-items:center; overflow:hidden;
+      border:1px solid #1b2b4a;
+    }
+    .site-ico img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .site-meta{ display:flex; flex-direction:column; min-width:0; }
+    .site-name{ font-size:.95rem; color:#eaf4ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .site-host{ font-size:.78rem; color:#8fb0da; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* Tabs y Split */
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+    .tab {
+      padding:6px 10px; border:1px solid var(--border); border-radius:8px; cursor:pointer;
+      background:#101d3b; color:#fff; transition:all .2s;
+    }
+    .tab.active, .tab:hover { background: var(--accent); color:#fff; box-shadow: 0 0 10px rgba(74,195,255,.35); }
+    .grid-split { display:grid; gap:8px; width:100%; height:100%; }
+
+    /* Split tiles + handle */
+    .split-tile{
+      position: relative;
+      width:100%; height:100%;
+      border:1px solid rgba(31,139,255,.20);
+      border-radius: 10px;
+      overflow:hidden;
+      background: #000;
+    }
+    .split-tile.dragging{
+      opacity:.65;
+      outline:2px dashed rgba(74,195,255,.7);
+      outline-offset: -6px;
+    }
+    .split-badge{
+      position:absolute;
+      top:8px; left:8px;
+      z-index:2;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(7,12,24,.55);
+      border:1px solid rgba(74,195,255,.25);
+      color:#eaf4ff;
+      font: 12px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      user-select:none;
+      cursor: grab;
+      backdrop-filter: blur(8px);
+    }
+    .split-badge:active{ cursor: grabbing; }
+    .split-tile.dragging iframe { pointer-events: none !important; }
+
+    /* Modales */
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,10,30,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content {
+      background: var(--card); color: var(--text);
+      padding: 1rem; border-radius: 12px; width: 80%; max-height: 80%;
+      overflow: auto; border:1px solid var(--border); box-shadow: 0 0 25px rgba(31,139,255,.3);
+    }
+    .modal h3 { color: var(--accent-2); text-align: center; margin-top:0; text-shadow: 0 0 10px rgba(74,195,255,.35); }
+
+    /* Fullscreen container */
+    .fullscreen-container{
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      background: #000 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .fullscreen-container video,
+    .fullscreen-container iframe,
+    .fullscreen-container .grid-split{
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* FS Toolbar PRO (auto-hide, pero en focus queda fija) */
+    .fs-toolbar{
+      position:absolute;
+      top:10px; left:10px; right:10px;
+      z-index:10001;
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      padding:10px;
+      border:1px solid rgba(74,195,255,.25);
+      background: rgba(7, 12, 24, .62);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.35), 0 0 18px rgba(31,139,255,.18);
+      transition: transform .18s ease, opacity .18s ease;
+      pointer-events: auto;
+    }
+    .fullscreen-container .fs-toolbar.fs-hidden{
+      transform: translateY(-120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    /* ✅ cuando está “pinned” (focus) NO se puede esconder */
+    .fullscreen-container .fs-toolbar.fs-pinned{
+      transform: none !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+
+    .fs-left{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .fs-title{font-weight:800; letter-spacing:.2px; color:#eaf4ff; text-shadow: 0 0 10px rgba(74,195,255,.25);}
+    .fs-chip{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(31,139,255,.35);
+      background: rgba(15,27,51,.65);
+      color:#cfe8ff;
+      font: 12px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .fs-actions{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+    .fs-btn{
+      padding:7px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(31,139,255,.35);
+      background: rgba(31,139,255,.18);
+      color:#eaf4ff;
+      cursor:pointer;
+      font-weight:800;
+    }
+    .fs-btn:hover{ background: rgba(74,195,255,.25); border-color: rgba(74,195,255,.6); }
+    .fs-btn.active{
+      background: rgba(33,208,122,.20);
+      border-color: rgba(33,208,122,.65);
+      box-shadow: 0 0 0 2px rgba(33,208,122,.20);
+    }
+    .fs-toggle{
+      display:flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(31,139,255,.35);
+      background: rgba(15,27,51,.55);
+      color:#cfe8ff;
+      font: 12px/1 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      user-select:none;
+    }
+
+    /* Focus Mode */
+    .focus-overlay{
+      position:absolute;
+      inset:0;
+      z-index: 9998;
+      display:flex;
+      flex-direction:column;
+      background:#000;
+    }
+    .focus-main{
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 10px;
+    }
+    .focus-dock{
+      flex: 0 0 auto;
+      height: 24vh;
+      min-height: 180px;
+      padding: 10px;
+      border-top: 1px solid rgba(74,195,255,.18);
+      background: radial-gradient(circle at 50% 0%, rgba(31,139,255,.12), rgba(0,0,0,.88));
+      display:flex;
+      gap:10px;
+      overflow-x:auto;
+      align-items:stretch;
+    }
+    .focus-dock .split-tile{
+      flex: 0 0 340px;
+      width: 340px;
+      height: 100%;
+      border-radius: 14px;
+      border:1px solid rgba(74,195,255,.22);
+      box-shadow: 0 0 18px rgba(31,139,255,.10);
+    }
+    .focus-dock .split-badge{
+      top:10px; left:10px;
+      background: rgba(0,0,0,.55);
+    }
+    .focus-hint{
+      position:absolute;
+      bottom: calc(24vh + 16px);
+      left: 16px;
+      z-index: 10002;
+      padding:8px 10px;
+      border-radius: 12px;
+      background: rgba(7,12,24,.55);
+      border: 1px solid rgba(74,195,255,.20);
+      font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:#cfe8ff;
+      backdrop-filter: blur(10px);
+      pointer-events:none;
+    }
+
+    /* Doble pantalla */
+    #wrapper-doble { display:none; position:fixed; inset:0; z-index: 10050; background:#000; flex-direction:column; }
+    #wrapper-doble.fullscreen-simulado { display:flex; }
+    #controles-doble { position: fixed; top: 10px; left: 10px; display: flex; gap: 8px; z-index: 10060; }
+    #controles-doble button { padding:6px 10px; border:none; border-radius:10px; background:var(--accent); color:#fff; font-weight:700; cursor:pointer; }
+    #controles-doble button:hover{ background:var(--accent-2); }
+    #monitor-doble { flex:1 1 auto; display:flex; width:100%; height:100%; overflow:hidden; }
+    #monitor-doble iframe { width:50%; height:100%; border:0; display:block; background:#111; opacity:0; transition:opacity .25s ease; }
+    #monitor-doble iframe.cargado { opacity:1; }
+
+    /* Status dropdown */
+    .status-wrap { position: fixed; top: 10px; right: 10px; z-index: 100000; }
+    #statusToggle {
+      background:#0f1b33; color:#eaf4ff; border:1px solid var(--border);
+      border-radius:10px; padding:6px 10px; font: 12px/1 system-ui, sans-serif; cursor:pointer;
+      box-shadow: 0 0 10px rgba(31,139,255,.18);
+    }
+    #statusToggle:hover{ background:#132545; }
+    #statusPanel {
+      display:none; position:absolute; top:38px; right:0; width: 360px; max-height: 50vh; overflow:auto;
+      background:#0b0e14; color:#d5d7db; border:1px solid #273043; border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    .status-head { display:flex; align-items:center; gap:8px; padding:8px; border-bottom:1px solid #273043; position: sticky; top:0; background: inherit; }
+    .status-head .spacer { flex:1; }
+    #statusLog { margin:0; padding:8px; white-space: pre-wrap; word-break: break-word; font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; color:#cfe4ff; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar{height:8px;width:8px}
+    ::-webkit-scrollbar-track{background:#0c1328}
+    ::-webkit-scrollbar-thumb{background:var(--accent);border-radius:10px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--accent-2)}
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>THE APPTV CENTRAL</h1>
+
+    <div id="carrusel-wrapper">
+      <button class="flecha-carrusel flecha-izquierda" onclick="scrollCarrusel(-1)">⬅️</button>
+      <div id="canales-inferiores"></div>
+      <button class="flecha-carrusel flecha-derecha" onclick="scrollCarrusel(1)">➡️</button>
+    </div>
+
+    <div id="youtube-controls" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+      <input id="youtubeSearch" type="text" placeholder="Buscar en YouTube..." style="flex: 1;" />
+      <button onclick="buscarYT()">🔍 Buscar</button>
+      <button onclick="toggleRotacion()">⏸️ Pausar</button>
+      <button onclick="siguienteVideo()">⏭️ Siguiente</button>
+    </div>
+
+    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:.6rem;">
+      <input id="dualUrl1" type="url" placeholder="https://sitio-izquierdo.com" style="flex:1; min-width:220px;">
+      <input id="dualUrl2" type="url" placeholder="https://sitio-derecho.com" style="flex:1; min-width:220px;">
+      <button onclick="abrirDesdeInputsDoble()">⛶ Doble Fullscreen</button>
+    </div>
+
+    <input type="text" id="buscador" placeholder="Buscar canal..." />
+    <input type="file" id="cargarArchivo" accept=".json,.m3u8,.m3u" />
+    <button onclick="cargarCanalesInternos()">🎞️ Cargar Canales Internos</button>
+    <button onclick="mostrarFavoritos()">📁 Ver Favoritos</button>
+    <button onclick="exportarFavoritos()">💾 Exportar Favoritos</button>
+    <button onclick="desbloquearAdulto()">🔐🔑 Desbloquear Adultos</button>
+  </header>
+
+  <main>
+    <div class="player-grid">
+      <!-- Monitor 1 -->
+      <div>
+        <div class="player-container" data-index="0"><video id="player1" controls></video></div>
+
+        <div class="linkbox" data-lb="0">
+          <div class="linkbox-head">
+            <div class="linkbox-title">🌐 Sitios favoritos · Selecciona 1..N y usa “Abrir sitios”</div>
+            <div class="linkbox-tools">
+              <input class="lb-filter" id="lbFilter0" type="search" placeholder="Filtrar sitios...">
+              <button onclick="lbSelectAll(0)">✔ Seleccionar todo</button>
+              <button onclick="lbClearAll(0)">✖ Quitar todo</button>
+            </div>
+          </div>
+          <div class="linkbox-grid" id="linkboxGrid0"></div>
+        </div>
+
+        <div class="botones-panel">
+          <button onclick="agregarAFavoritos(0)">⭐ Guardar</button>
+          <button onclick="iniciarAleatorio(0)">🎲 Aleatorio</button>
+          <button onclick="detenerAleatorio(0)">⏹️ Detener</button>
+          <button onclick="reproducirDesdeBusqueda(0)">▶️ YouTube</button>
+        </div>
+
+        <div class="botones-panel">
+          <select id="siteSelect0" multiple size="5" class="site-select" style="display:none;"></select>
+          <div class="site-controls">
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="splitMode0" checked> Vista dividida (si hay varios)
+            </label>
+            <button onclick="cargarGraficoTV(0)">🌐 Abrir sitios</button>
+            <button onclick="guardarSeleccionSitios(0)">💾 Guardar selección</button>
+            <button onclick="limpiarSeleccionSitios(0)">🧹 Limpiar</button>
+          </div>
+        </div>
+
+        <div class="botones-panel">
+          <input type="text" id="symbolInput0" placeholder="Símbolo (ej: EURUSD)" style="flex: 1;" />
+          <button onclick="cargarGraficoTV(0)">📈 Gráfico</button>
+          <button onclick="quitarGraficoTV(0)">🗑️ Quitar</button>
+        </div>
+      </div>
+
+      <!-- Monitor 2 -->
+      <div>
+        <div class="player-container" data-index="1"><video id="player2" controls></video></div>
+
+        <div class="linkbox" data-lb="1">
+          <div class="linkbox-head">
+            <div class="linkbox-title">🌐 Sitios favoritos</div>
+            <div class="linkbox-tools">
+              <input class="lb-filter" id="lbFilter1" type="search" placeholder="Filtrar sitios...">
+              <button onclick="lbSelectAll(1)">✔ Seleccionar todo</button>
+              <button onclick="lbClearAll(1)">✖ Quitar todo</button>
+            </div>
+          </div>
+          <div class="linkbox-grid" id="linkboxGrid1"></div>
+        </div>
+
+        <div class="botones-panel">
+          <button onclick="agregarAFavoritos(1)">⭐ Guardar</button>
+          <button onclick="iniciarAleatorio(1)">🎲 Aleatorio</button>
+          <button onclick="detenerAleatorio(1)">⏹️ Detener</button>
+          <button onclick="reproducirDesdeBusqueda(1)">▶️ YouTube</button>
+        </div>
+
+        <div class="botones-panel">
+          <select id="siteSelect1" multiple size="5" class="site-select" style="display:none;"></select>
+          <div class="site-controls">
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="splitMode1" checked> Vista dividida (si hay varios)
+            </label>
+            <button onclick="cargarGraficoTV(1)">🌐 Abrir sitios</button>
+            <button onclick="guardarSeleccionSitios(1)">💾 Guardar selección</button>
+            <button onclick="limpiarSeleccionSitios(1)">🧹 Limpiar</button>
+          </div>
+        </div>
+
+        <div class="botones-panel">
+          <input type="text" id="symbolInput1" placeholder="Símbolo (ej: EURUSD)" style="flex: 1;" />
+          <button onclick="cargarGraficoTV(1)">📈 Gráfico</button>
+          <button onclick="quitarGraficoTV(1)">🗑️ Quitar</button>
+        </div>
+      </div>
+
+      <!-- Monitor 3 -->
+      <div>
+        <div class="player-container" data-index="2"><video id="player3" controls></video></div>
+
+        <div class="linkbox" data-lb="2">
+          <div class="linkbox-head">
+            <div class="linkbox-title">🌐 Sitios favoritos</div>
+            <div class="linkbox-tools">
+              <input class="lb-filter" id="lbFilter2" type="search" placeholder="Filtrar sitios...">
+              <button onclick="lbSelectAll(2)">✔ Seleccionar todo</button>
+              <button onclick="lbClearAll(2)">✖ Quitar todo</button>
+            </div>
+          </div>
+          <div class="linkbox-grid" id="linkboxGrid2"></div>
+        </div>
+
+        <div class="botones-panel">
+          <button onclick="agregarAFavoritos(2)">⭐ Guardar</button>
+          <button onclick="iniciarAleatorio(2)">🎲 Aleatorio</button>
+          <button onclick="detenerAleatorio(2)">⏹️ Detener</button>
+          <button onclick="reproducirDesdeBusqueda(2)">▶️ YouTube</button>
+        </div>
+
+        <div class="botones-panel">
+          <select id="siteSelect2" multiple size="5" class="site-select" style="display:none;"></select>
+          <div class="site-controls">
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="splitMode2" checked> Vista dividida (si hay varios)
+            </label>
+            <button onclick="cargarGraficoTV(2)">🌐 Abrir sitios</button>
+            <button onclick="guardarSeleccionSitios(2)">💾 Guardar selección</button>
+            <button onclick="limpiarSeleccionSitios(2)">🧹 Limpiar</button>
+          </div>
+        </div>
+
+        <div class="botones-panel">
+          <input type="text" id="symbolInput2" placeholder="Símbolo (ej: EURUSD)" style="flex: 1;" />
+          <button onclick="cargarGraficoTV(2)">📈 Gráfico</button>
+          <button onclick="quitarGraficoTV(2)">🗑️ Quitar</button>
+        </div>
+      </div>
+
+      <!-- Monitor 4 -->
+      <div>
+        <div class="player-container" data-index="3"><video id="player4" controls></video></div>
+
+        <div class="linkbox" data-lb="3">
+          <div class="linkbox-head">
+            <div class="linkbox-title">🌐 Sitios favoritos</div>
+            <div class="linkbox-tools">
+              <input class="lb-filter" id="lbFilter3" type="search" placeholder="Filtrar sitios...">
+              <button onclick="lbSelectAll(3)">✔ Seleccionar todo</button>
+              <button onclick="lbClearAll(3)">✖ Quitar todo</button>
+            </div>
+          </div>
+          <div class="linkbox-grid" id="linkboxGrid3"></div>
+        </div>
+
+        <div class="botones-panel">
+          <button onclick="agregarAFavoritos(3)">⭐ Guardar</button>
+          <button onclick="iniciarAleatorio(3)">🎲 Aleatorio</button>
+          <button onclick="detenerAleatorio(3)">⏹️ Detener</button>
+          <button onclick="reproducirDesdeBusqueda(3)">▶️ YouTube</button>
+        </div>
+
+        <div class="botones-panel">
+          <select id="siteSelect3" multiple size="5" class="site-select" style="display:none;"></select>
+          <div class="site-controls">
+            <label style="display:flex;align-items:center;gap:6px;">
+              <input type="checkbox" id="splitMode3" checked> Vista dividida (si hay varios)
+            </label>
+            <button onclick="cargarGraficoTV(3)">🌐 Abrir sitios</button>
+            <button onclick="guardarSeleccionSitios(3)">💾 Guardar selección</button>
+            <button onclick="limpiarSeleccionSitios(3)">🧹 Limpiar</button>
+          </div>
+        </div>
+
+        <div class="botones-panel">
+          <input type="text" id="symbolInput3" placeholder="Símbolo (ej: EURUSD)" style="flex: 1;" />
+          <button onclick="cargarGraficoTV(3)">📈 Gráfico</button>
+          <button onclick="quitarGraficoTV(3)">🗑️ Quitar</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modales -->
+  <div class="modal" id="modalFavoritos">
+    <div class="modal-content">
+      <h3>🎯 Favoritos</h3>
+      <ul id="listaFavoritos"></ul>
+      <div style="text-align:right;margin-top:10px;">
+        <button onclick="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalPantalla">
+    <div class="modal-content">
+      <h3>🖥️ ¿En qué pantalla quieres ver este canal?</h3>
+      <div style="display: flex; gap: 1rem; justify-content: center; margin: 1rem 0;">
+        <button onclick="reproducirEnPantallaSeleccionada(0)">Pantalla 1</button>
+        <button onclick="reproducirEnPantallaSeleccionada(1)">Pantalla 2</button>
+        <button onclick="reproducirEnPantallaSeleccionada(2)">Pantalla 3</button>
+        <button onclick="reproducirEnPantallaSeleccionada(3)">Pantalla 4</button>
+      </div>
+      <div style="text-align:right;">
+        <button onclick="cerrarModalPantalla()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: MONITOR DOBLE -->
+  <div id="wrapper-doble">
+    <div id="controles-doble">
+      <button onclick="salirPantallaCompletaSimulada('wrapper-doble')">✖ Salir</button>
+      <button onclick="activarPantallaCompletaSimulada('wrapper-doble')">⛶ Re-entrar</button>
+    </div>
+    <div id="monitor-doble">
+      <iframe id="site1" title="Sitio 1"></iframe>
+      <iframe id="site2" title="Sitio 2"></iframe>
+    </div>
+  </div>
+
+  <!-- STATUS DROPDOWN -->
+  <div class="status-wrap" id="statusWrap">
+    <button id="statusToggle" aria-expanded="false">🛈 Estado</button>
+    <div id="statusPanel" role="region" aria-label="Estado / Log">
+      <div class="status-head">
+        <strong>Estado / Log</strong>
+        <div class="spacer"></div>
+        <label style="font:12px/1 sans-serif;display:flex;align-items:center;gap:6px;color:#9db2c6;">
+          <input type="checkbox" id="statusAutoscroll" checked> Auto scroll
+        </label>
+        <button id="statusClear" style="background:#253043;border:1px solid #3b4a61;border-radius:8px;padding:4px 8px;color:#cfd8e3;cursor:pointer;">Limpiar</button>
+      </div>
+      <pre id="statusLog">(vacío)</pre>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <script>
+    /* ================== STATUS ================== */
+    const statusToggle = document.getElementById('statusToggle');
+    const statusPanel  = document.getElementById('statusPanel');
+    const statusLogEl  = document.getElementById('statusLog');
+    const statusClear  = document.getElementById('statusClear');
+    const statusAuto   = document.getElementById('statusAutoscroll');
+    let _logBuf = [];
+    function renderLog(){ statusLogEl.textContent = _logBuf.join('\\n').slice(-20000); if(statusAuto.checked){ statusLogEl.scrollTop = statusLogEl.scrollHeight; } }
+    function log(){ const msg = Array.from(arguments).map(x => (typeof x === 'object') ? JSON.stringify(x) : String(x)).join(' '); console.log('[APP]', msg); _logBuf.push(msg); if(_logBuf.length>500) _logBuf = _logBuf.slice(-500); renderLog(); }
+    function setStatus(msg){ log(msg); }
+    statusToggle.addEventListener('click', ()=>{ const open = statusPanel.style.display === 'block'; statusPanel.style.display = open ? 'none' : 'block'; statusToggle.setAttribute('aria-expanded', String(!open)); });
+    statusClear.addEventListener('click', ()=>{ _logBuf = []; renderLog(); });
+    document.addEventListener('keydown', (e)=>{ if(e.altKey && e.key.toLowerCase() === 'l'){ statusToggle.click(); } });
+
+    /* ================== Carrusel ================== */
+    function scrollCarrusel(direccion) {
+      const carrusel = document.getElementById("canales-inferiores");
+      carrusel.scrollBy({ left: 300 * direccion, behavior: "smooth" });
+    }
+
+    /* ================== Parser M3U ================== */
+    function parseM3U(text) {
+  const clean = (text || "")
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n?/g, "\n");
+
+  const lines = clean.split("\n");
+  const out = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = (lines[i] || "").trim();
+    if (!line || line.startsWith("#EXTM3U")) continue;
+
+    if (line.startsWith("#EXTINF")) {
+      let name = "Canal sin nombre";
+      const commaIdx = line.indexOf(",");
+      if (commaIdx !== -1 && commaIdx < line.length - 1) {
+        name = line.slice(commaIdx + 1).trim() || name;
+      }
+
+      const url = (lines[i + 1] || "").trim();
+      if (url && /^https?:\/\//i.test(url)) {
+        out.push({ nombre: name, url });
+        i++; // saltamos la línea de URL
+      }
+      continue;
+    }
+
+    if (/^https?:\/\//i.test(line)) {
+      out.push({
+        nombre: line.split("/").slice(-1)[0] || "Canal",
+        url: line
+      });
+    }
+  }
+
+  return out;
+}
+
+
+    /* ================== Carrusel render ================== */
+    let canalSeleccionado = null;
+    let listaOriginalCanales = [];
+    function mostrarCanales(canales, guardarOriginal = false) {
+      if (guardarOriginal) listaOriginalCanales = canales;
+      const contenedor = document.getElementById("canales-inferiores");
+      contenedor.innerHTML = "";
+      if (!canales.length) {
+        contenedor.innerHTML = '<div class="canal" style="background:#f88;color:#000">No se cargaron canales</div>';
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      canales.forEach((canal) => {
+        const div = document.createElement("div");
+        div.className = "canal";
+        div.textContent = canal.nombre || 'Canal';
+        div.setAttribute('data-url', canal.url);
+        frag.appendChild(div);
+      });
+      contenedor.appendChild(frag);
+      log('✅ Carrusel renderizado:', canales.length, 'canales');
+    }
+    document.getElementById('canales-inferiores').addEventListener('click', (e) => {
+      const item = e.target.closest('.canal');
+      if (!item) return;
+      const url = item.getAttribute('data-url');
+      if (!url) return;
+      mostrarModalPantalla(url);
+    });
+
+    /* ================== Modal pantalla ================== */
+    function mostrarModalPantalla(url) {
+      canalSeleccionado = url;
+      const modal = document.getElementById("modalPantalla");
+      if (modal) modal.style.display = "flex";
+    }
+    function cerrarModalPantalla() {
+      const modal = document.getElementById("modalPantalla");
+      if (modal) modal.style.display = "none";
+      canalSeleccionado = null;
+    }
+    function reproducirEnPantallaSeleccionada(pantallaIndex) {
+      if (!Number.isInteger(pantallaIndex) || pantallaIndex < 0 || pantallaIndex > 3) { alert("Pantalla inválida."); return; }
+      if (canalSeleccionado) {
+        const container = document.querySelector(`.player-container[data-index='${pantallaIndex}']`);
+        if (!container) { alert("Contenedor no encontrado."); return; }
+        container.innerHTML = `<video id="player${pantallaIndex + 1}" controls></video>`;
+        reproducirCanal(canalSeleccionado, pantallaIndex);
+      }
+      cerrarModalPantalla();
+    }
+    function reproducirCanal(url, playerIndex) {
+      const player = document.getElementById(`player${playerIndex + 1}`);
+      if (!player) return;
+      if (player.hlsInstance) { try { player.hlsInstance.destroy(); } catch (e) {} }
+      if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(player);
+        player.hlsInstance = hls;
+        hls.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(()=>{}));
+        hls.on(Hls.Events.ERROR, (_, data)=> log('HLS error', data?.type || '', data?.details || ''));
+      } else if (player.canPlayType && player.canPlayType('application/vnd.apple.mpegurl')) {
+        player.src = url;
+        player.addEventListener('loadedmetadata', () => player.play().catch(()=>{}), { once:true });
+      } else alert("Tu navegador no soporta la reproducción de este canal.");
+    }
+
+    /* ================== Buscar canales ================== */
+    function filtrarCanales() {
+      const texto = (document.getElementById("buscador").value || '').toLowerCase();
+      const filtrados = listaOriginalCanales.filter(c => (c.nombre||'').toLowerCase().includes(texto));
+      mostrarCanales(filtrados);
+    }
+    document.getElementById("buscador").addEventListener("input", filtrarCanales);
+
+    /* ================== Input file ================== */
+    document.getElementById('cargarArchivo').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const ext = file.name.split('.').pop().toLowerCase();
+      const text = await file.text();
+      if (ext === 'json') {
+        try {
+          const data = JSON.parse(text);
+          if (Array.isArray(data)) {
+            const canales = data.map(c => ({ nombre: c.nombre || c.name || 'Canal', url: c.url }));
+            mostrarCanales(canales, true);
+            log('📤 Cargado JSON con', canales.length, 'canales');
+          } else alert('JSON inválido: debe ser un array de {nombre,url}');
+        } catch (err) { alert('Error al leer el JSON'); }
+      } else {
+        const canales = parseM3U(text);
+        mostrarCanales(canales, true);
+        log('📤 Cargado M3U con', canales.length, 'canales');
+      }
+      e.target.value = '';
+    });
+
+    /* ================== Carga interna ================== */
+    async function cargarCanalesInternos() { await loadM3UFiles(true); }
+    const M3U_FILES = ['update2.m3u','xumo.m3u','xiaomi.m3u','localnow.m3u','update.m3u','Country Brazil.m3u'];
+    async function fetchTextSafe(path) {
+      const url = encodeURI(path.trim());
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const txt = await res.text();
+        log('📥 OK', url, `(${txt.length} bytes)`);
+        return { ok:true, url, text:txt };
+      } catch (err) {
+        log('❌ Fetch fail', url, String(err));
+        return { ok:false, url, error: String(err) };
+      }
+    }
+    async function loadM3UFiles(fromButton=false) {
+      setStatus(fromButton ? 'Cargando listas (botón)…' : 'Auto-cargando listas…');
+      const results = await Promise.all(M3U_FILES.map(fetchTextSafe));
+      const canales = [];
+      let errores = 0;
+      for (const r of results) {
+        if (r.ok) {
+          const parsed = parseM3U(r.text);
+          log('🔎 Parse', r.url, '→', parsed.length, 'canales');
+          canales.push(...parsed);
+        } else errores++;
+      }
+      if (!canales.length) {
+        log('⚠️ Sin canales. DEMO fallback.');
+        mostrarCanales([
+          { nombre:'DEMO Canal HLS 1', url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8' },
+          { nombre:'DEMO Big Buck Bunny', url:'https://test-streams.mux.dev/bbb-abr/bbb.m3u8' },
+        ], true);
+        setStatus('⚠️ No se pudieron cargar tus .m3u. Revisa nombres/rutas y CORS.');
+      } else {
+        mostrarCanales(canales, true);
+        setStatus(`✅ Cargados ${canales.length} canales (${errores} errores)`);
+      }
+    }
+
+    /* ================== YouTube ================== */
+    let apiKey = "AIzaSyA4NpwgJmEzBGGTzFFjShyrtWICgSSml-I";
+    let rotationInterval = null;
+    let currentVideoIndex = 0;
+    let youtubeResults = [];
+    let isPaused = false;
+
+    function buscarYT() {
+      const q = document.getElementById("youtubeSearch").value.trim();
+      if (!q) return alert("Escribe una búsqueda.");
+      fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=40&q=${encodeURIComponent(q)}&key=${apiKey}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.items?.length) return alert("No se encontraron resultados.");
+          youtubeResults = data.items;
+          currentVideoIndex = 0;
+          reproducirVideoActual();
+          iniciarRotacion();
+        })
+        .catch(err => { console.error("Error YouTube:", err); alert("Error al buscar videos."); });
+    }
+    function reproducirVideoActual() {
+      const video = youtubeResults[currentVideoIndex];
+      if (!video) return;
+      const videoId = video.id.videoId;
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      iframe.allowFullscreen = true;
+      const container = document.querySelector(".player-container[data-index='0']");
+      container.innerHTML = "";
+      container.appendChild(iframe);
+    }
+    function iniciarRotacion() { detenerRotacion(); rotationInterval = setInterval(() => { if (!isPaused) siguienteVideo(); }, 3 * 60 * 1000); }
+    function detenerRotacion() { if (rotationInterval) clearInterval(rotationInterval); }
+    function toggleRotacion() { isPaused = !isPaused; alert(isPaused ? "⏸️ Rotación pausada." : "▶️ Rotación reanudada."); }
+    function siguienteVideo() { currentVideoIndex = (currentVideoIndex + 1) % youtubeResults.length; reproducirVideoActual(); }
+
+    /* ================== Favoritos (stubs) ================== */
+    function agregarAFavoritos(idx){ alert('Favoritos: implementar según tu estructura de datos.'); }
+    function iniciarAleatorio(idx){ alert('Aleatorio: implementar según tu lógica.'); }
+    function detenerAleatorio(idx){ alert('Detener aleatorio: implementar.'); }
+    function reproducirDesdeBusqueda(idx){ alert('YouTube por monitor: adaptar si quieres búsquedas por monitor.'); }
+    function mostrarFavoritos(){ document.getElementById('modalFavoritos').style.display='flex'; }
+    function cerrarModal(){ document.getElementById('modalFavoritos').style.display='none'; }
+    function exportarFavoritos(){ alert('Exportar favoritos: implementar según tu formato.'); }
+    function desbloquearAdulto(){ alert('Adultos: implementar PIN/clave.'); }
+
+    /* ================== Sitios por monitor ================== */
+    const FAVORITE_SITES = [
+      { label: "WELTRADE CENTRAL ", url: "https://cuervo-123.github.io/trading-central/" },
+      { label: "The Portal Pro ", url: "https://cuervo-123.github.io/the-portal-pro/" },
+      
+      { label: "PLAYLIST CREATOR V2", url: "https://cuervo-123.github.io/cuervo-123-TV-STATION-PLAYLIST-CREATOR-1/" },
+      { label: "RADIO STATION GLOBAL 1", url: "https://cuervo-123.github.io/radio-pro/" },
+      { label: "GLOBAL COUNTRY TV APP", url: "https://cuervo-123.github.io/tv4you/" },
+      { label: "MOVIE CENTRA APP 1", url: "https://film.hzz.cool" },
+      { label: "MOVIE PREVIEW SEARCHE", url: "https://mate-academy.github.io/react_movies-list-fetch-movies/" },
+      { label: "GAMES", url: "https://gamesnacks.com/" },
+      { label: "PLAYLIST CREATOR PRO", url: "https://cuervo-123.github.io/TV-STATION-PLAYLIST-CREATOR-PRO/" },
+      { label: "PRESET BY COUNTRY", url: "https://cuervo-123.github.io/w3u-reader-iptv-plus/" },
+      { label: "WTVFREE APP", url: "https://cuervo-123.github.io/worldtv4you/" },
+      { label: "PW APP PRO", url: "https://cuervo-123.github.io/Ximena-homepage/" }
+    ];
+    const LS_KEY = (idx) => `siteSelection:${idx}`;
+    function hostFromUrl(url){ try { return new URL(url).hostname; } catch { return ''; } }
+    function faviconUrl(url){ const host = hostFromUrl(url); return host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''; }
+
+    function renderLinkBox(index){
+      const grid = document.getElementById(`linkboxGrid${index}`);
+      if(!grid) return;
+
+      const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
+      grid.innerHTML = FAVORITE_SITES.map(s=>{
+        const selected = saved.includes(s.url) ? 'selected' : '';
+        const host = hostFromUrl(s.url);
+        const ico  = faviconUrl(s.url);
+        const safeUrl = s.url.replace(/"/g, '&quot;');
+        return `
+          <div class="site-card ${selected}" data-url="${safeUrl}" data-label="${s.label.toLowerCase()}" data-host="${(host||'').toLowerCase()}">
+            <div class="site-ico">${ico ? `<img src="${ico}" alt="ico">` : '🌐'}</div>
+            <div class="site-meta">
+              <div class="site-name" title="${s.label}">${s.label}</div>
+              <div class="site-host" title="${s.url}">${host || s.url}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      grid.addEventListener('click', (e)=>{
+        const card = e.target.closest('.site-card');
+        if(!card) return;
+        card.classList.toggle('selected');
+        persistSelectionFromCards(index);
+      }, { passive:true });
+    }
+
+    function selectedUrlsFromCards(index){
+      const grid = document.getElementById(`linkboxGrid${index}`);
+      if(!grid) return [];
+      return Array.from(grid.querySelectorAll('.site-card.selected')).map(c=>c.getAttribute('data-url')).filter(Boolean);
+    }
+    function persistSelectionFromCards(index){
+      const urls = selectedUrlsFromCards(index);
+      localStorage.setItem(LS_KEY(index), JSON.stringify(urls));
+      const select = document.getElementById(`siteSelect${index}`);
+      if(select){
+        Array.from(select.options).forEach(o => { o.selected = urls.includes(o.value); });
+      }
+    }
+
+    function attachFilter(index){
+      const input = document.getElementById(`lbFilter${index}`);
+      const grid  = document.getElementById(`linkboxGrid${index}`);
+      if(!input || !grid) return;
+      input.addEventListener('input', ()=>{
+        const q = input.value.trim().toLowerCase();
+        grid.querySelectorAll('.site-card').forEach(card=>{
+          const byLabel = card.getAttribute('data-label') || '';
+          const byHost  = card.getAttribute('data-host') || '';
+          const visible = (!q) || byLabel.includes(q) || byHost.includes(q);
+          card.style.display = visible ? '' : 'none';
+        });
+      }, { passive:true });
+    }
+
+    function lbSelectAll(index){
+      const grid = document.getElementById(`linkboxGrid${index}`);
+      if(!grid) return;
+      grid.querySelectorAll('.site-card').forEach(c => { if(c.style.display !== 'none') c.classList.add('selected'); });
+      persistSelectionFromCards(index);
+    }
+    function lbClearAll(index){
+      const grid = document.getElementById(`linkboxGrid${index}`);
+      if(!grid) return;
+      grid.querySelectorAll('.site-card').forEach(c => c.classList.remove('selected'));
+      persistSelectionFromCards(index);
+    }
+
+    function initSitePicker(index) {
+      const select = document.getElementById(`siteSelect${index}`);
+      if (select) {
+        select.innerHTML = FAVORITE_SITES.map(s => `<option value="${s.url}">${s.label} — ${s.url}</option>`).join("");
+        const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
+        Array.from(select.options).forEach(opt => { opt.selected = saved.includes(opt.value); });
+      }
+      renderLinkBox(index);
+      attachFilter(index);
+    }
+
+    const normalizeUrl = (u) => {
+  if (!u) return "";
+
+  let url = u.trim();
+
+  // Si NO empieza por http:// o https://, lo corregimos
+  if (!/^https?:\/\//i.test(url)) {
+    url = "https://" + url.replace(/^\/+/, "");
+  }
+
+  return url;
+};
+
+function getSelectedSites(index){
+  const urls = selectedUrlsFromCards(index);
+  if (urls.length) return urls;
+
+  const select = document.getElementById(`siteSelect${index}`);
+  return select
+    ? Array.from(select.selectedOptions).map(o => o.value)
+    : [];
+}
+
+
+    /* ===== FS prefs ===== */
+    const FS_KEEP_KEY = (i)=>`fsKeepSplit:${i}`;
+    const FS_LAYOUT_KEY = (i)=>`fsLayout:${i}`;
+    const FS_FOCUS_KEY  = (i)=>`fsFocusOn:${i}`;
+
+    /* ===== Focus state ===== */
+    const focusState = new Map();
+
+    function computeAutoCols(n){
+      if(n <= 1) return 1;
+      if(n === 2) return 2;
+      if(n === 3) return 3;
+      return 3;
+    }
+
+    function applyGridLayout(container, mode){
+      const grid = container.querySelector('.grid-split');
+      if(!grid) return false;
+      const tiles = Array.from(grid.querySelectorAll('.split-tile'));
+      const n = Math.max(1, tiles.length);
+      let cols = computeAutoCols(n);
+      if(mode === '2x2') cols = 2;
+      if(mode === '3col') cols = 3;
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.style.gridAutoRows = `minmax(200px, 1fr)`;
+      return true;
+    }
+
+    function getAllIframeUrls(container){
+      return Array.from(container.querySelectorAll('iframe'))
+        .map(f => f.getAttribute('src') || '')
+        .filter(Boolean);
+    }
+
+    function getModeLabel(container){
+      const urls = getAllIframeUrls(container);
+      const n = urls.length;
+      const isSplit = !!container.querySelector('.grid-split');
+      const isTabs  = !!container.querySelector('.tabs');
+      if(isSplit) return `Split · ${n} app${n===1?'':'s'} (drag)`;
+      if(isTabs)  return `Tabs · ${n} app${n===1?'':'s'}`;
+      return (n ? `App · ${n}` : 'Vacío');
+    }
+
+    function removeFsToolbar(container){
+      const tb = container.querySelector('.fs-toolbar');
+      if(tb) tb.remove();
+    }
+
+    /* ===== Drag manual para grid split ===== */
+    function attachDnDToSplit(container){
+      const grid = container.querySelector('.grid-split');
+      if(!grid) return;
+      if(grid.__dndAttached) return;
+      grid.__dndAttached = true;
+
+      let draggingTile = null;
+
+      const tiles = () => Array.from(grid.querySelectorAll('.split-tile'));
+
+      function setDragging(tile, on){
+        if(!tile) return;
+        tile.classList.toggle('dragging', !!on);
+        const iframe = tile.querySelector('iframe');
+        if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
+      }
+
+      function getPoint(e){
+        if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function findTileAt(x,y){
+        const el = document.elementFromPoint(x,y);
+        if(!el) return null;
+        return el.closest('.split-tile');
+      }
+
+      function refreshBadges(){
+        tiles().forEach((tile,i)=>{
+          tile.setAttribute('data-idx', String(i));
+          const badge = tile.querySelector('.split-badge');
+          if(badge) badge.textContent = `↕ Arrastra · ${i+1}`;
+        });
+      }
+
+      function onMove(e){
+        if(!draggingTile) return;
+        const p = getPoint(e);
+        const over = findTileAt(p.x, p.y);
+        if(!over || over === draggingTile) return;
+
+        const all = tiles();
+        const draggingIndex = all.indexOf(draggingTile);
+        const overIndex = all.indexOf(over);
+
+        if(draggingIndex < overIndex){
+          grid.insertBefore(draggingTile, over.nextSibling);
+        }else{
+          grid.insertBefore(draggingTile, over);
+        }
+        refreshBadges();
+      }
+
+      function onUp(){
+        if(!draggingTile) return;
+        setDragging(draggingTile, false);
+        draggingTile = null;
+
+        window.removeEventListener('mousemove', onMove, true);
+        window.removeEventListener('mouseup', onUp, true);
+        window.removeEventListener('touchmove', onMove, true);
+        window.removeEventListener('touchend', onUp, true);
+      }
+
+      grid.addEventListener('mousedown', (e)=>{
+        const badge = e.target.closest('.split-badge');
+        if(!badge) return;
+        const tile = badge.closest('.split-tile');
+        if(!tile) return;
+        e.preventDefault();
+        draggingTile = tile;
+        setDragging(draggingTile, true);
+
+        window.addEventListener('mousemove', onMove, true);
+        window.addEventListener('mouseup', onUp, true);
+      }, true);
+
+      grid.addEventListener('touchstart', (e)=>{
+        const badge = e.target.closest('.split-badge');
+        if(!badge) return;
+        const tile = badge.closest('.split-tile');
+        if(!tile) return;
+        e.preventDefault();
+        draggingTile = tile;
+        setDragging(draggingTile, true);
+
+        window.addEventListener('touchmove', onMove, true);
+        window.addEventListener('touchend', onUp, true);
+      }, true);
+
+      // dblclick -> focus
+      grid.addEventListener('dblclick', (e)=>{
+        const tile = e.target.closest('.split-tile');
+        if(!tile) return;
+        const idx = Number(container.getAttribute('data-index') || '-1');
+        if(idx >= 0) toggleFocus(idx, tile);
+      }, true);
+
+      refreshBadges();
+    }
+
+    /* ===== Drag dentro del dock (horizontal) ===== */
+    function attachDockDnD(dockEl){
+      if(!dockEl || dockEl.__dockDndAttached) return;
+      dockEl.__dockDndAttached = true;
+
+      let draggingTile = null;
+
+      const tiles = ()=> Array.from(dockEl.querySelectorAll('.split-tile'));
+
+      function setDragging(tile, on){
+        if(!tile) return;
+        tile.classList.toggle('dragging', !!on);
+        const iframe = tile.querySelector('iframe');
+        if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
+      }
+
+      function getPoint(e){
+        if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function findTileAt(x,y){
+        const el = document.elementFromPoint(x,y);
+        if(!el) return null;
+        return el.closest('.split-tile');
+      }
+
+      function onMove(e){
+        if(!draggingTile) return;
+        const p = getPoint(e);
+        const over = findTileAt(p.x, p.y);
+        if(!over || over === draggingTile) return;
+        if(!dockEl.contains(over)) return;
+
+        const all = tiles();
+        const a = all.indexOf(draggingTile);
+        const b = all.indexOf(over);
+        if(a < 0 || b < 0) return;
+
+        if(a < b){
+          dockEl.insertBefore(draggingTile, over.nextSibling);
+        }else{
+          dockEl.insertBefore(draggingTile, over);
+        }
+      }
+
+      function onUp(){
+        if(!draggingTile) return;
+        setDragging(draggingTile, false);
+        draggingTile = null;
+        window.removeEventListener('mousemove', onMove, true);
+        window.removeEventListener('mouseup', onUp, true);
+        window.removeEventListener('touchmove', onMove, true);
+        window.removeEventListener('touchend', onUp, true);
+      }
+
+      dockEl.addEventListener('mousedown', (e)=>{
+        const badge = e.target.closest('.split-badge');
+        if(!badge) return;
+        const tile = badge.closest('.split-tile');
+        if(!tile) return;
+        if(!dockEl.contains(tile)) return;
+        e.preventDefault();
+        draggingTile = tile;
+        setDragging(draggingTile, true);
+        window.addEventListener('mousemove', onMove, true);
+        window.addEventListener('mouseup', onUp, true);
+      }, true);
+
+      dockEl.addEventListener('touchstart', (e)=>{
+        const badge = e.target.closest('.split-badge');
+        if(!badge) return;
+        const tile = badge.closest('.split-tile');
+        if(!tile) return;
+        if(!dockEl.contains(tile)) return;
+        e.preventDefault();
+        draggingTile = tile;
+        setDragging(draggingTile, true);
+        window.addEventListener('touchmove', onMove, true);
+        window.addEventListener('touchend', onUp, true);
+      }, true);
+    }
+
+    /* ===== Focus Mode ===== */
+    function pinToolbarForFocus(container, pinned){
+      const tb = container?.querySelector('.fs-toolbar');
+      if(!tb) return;
+      if(pinned){
+        tb.classList.add('fs-pinned');
+        tb.classList.remove('fs-hidden'); // ✅ siempre visible
+      }else{
+        tb.classList.remove('fs-pinned');
+      }
+    }
+
+    function enterFocus(index, tileToFocus){
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if(!container) return;
+
+      if(focusState.has(index)) return;
+
+      const grid = container.querySelector('.grid-split');
+      if(!grid){ alert('Focus solo aplica cuando estás en Vista dividida (Split).'); return; }
+
+      const tiles = Array.from(grid.querySelectorAll('.split-tile'));
+      if(tiles.length <= 1){ alert('Focus necesita 2 o más apps.'); return; }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'focus-overlay';
+
+      const hint = document.createElement('div');
+      hint.className = 'focus-hint';
+      hint.textContent = 'FOCUS: click en una mini para subirla · arrastra minis para ordenar · botón 🎯 para salir';
+
+      const main = document.createElement('div');
+      main.className = 'focus-main';
+
+      const dock = document.createElement('div');
+      dock.className = 'focus-dock';
+
+      overlay.appendChild(main);
+      overlay.appendChild(dock);
+      overlay.appendChild(hint);
+
+      focusState.set(index, { overlay, main, dock, gridRef: grid });
+
+      container.appendChild(overlay);
+
+      const primary = tileToFocus || tiles[0];
+      main.appendChild(primary);
+      tiles.forEach(t=>{ if(t !== primary) dock.appendChild(t); });
+
+      dock.addEventListener('click', (e)=>{
+        const t = e.target.closest('.split-tile');
+        if(!t) return;
+        const current = main.querySelector('.split-tile');
+        if(current && current !== t){
+          dock.insertBefore(current, dock.firstChild);
+        }
+        main.appendChild(t);
+      }, { passive:true });
+
+      // ✅ drag dentro del dock
+      attachDockDnD(dock);
+
+      // ✅ toolbar fija visible en focus
+      pinToolbarForFocus(container, true);
+
+      localStorage.setItem(FS_FOCUS_KEY(index), '1');
+      log('🎯 Focus ON monitor', index+1);
+    }
+
+    function exitFocus(index){
+      const st = focusState.get(index);
+      if(!st) return;
+
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if(!container) return;
+
+      const { overlay, gridRef } = st;
+
+      let grid = gridRef;
+      if(!grid || !grid.isConnected){
+        grid = document.createElement('div');
+        grid.className = 'grid-split';
+        grid.style.width = '100%';
+        grid.style.height = '100%';
+        container.innerHTML = '';
+        container.appendChild(grid);
+      }
+
+      const allTiles = Array.from(overlay.querySelectorAll('.split-tile'));
+      grid.innerHTML = '';
+      allTiles.forEach(t=> grid.appendChild(t));
+
+      overlay.remove();
+
+      grid.__dndAttached = false;
+      attachDnDToSplit(container);
+
+      focusState.delete(index);
+      localStorage.setItem(FS_FOCUS_KEY(index), '0');
+
+      // ✅ toolbar vuelve a autohide normal
+      pinToolbarForFocus(container, false);
+
+      const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+      applyGridLayout(container, layout);
+
+      log('🎯 Focus OFF monitor', index+1);
+    }
+
+    function toggleFocus(index, tile){
+      if(focusState.has(index)) exitFocus(index);
+      else enterFocus(index, tile);
+
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      const chip = container?.querySelector('.fs-chip');
+      if(chip) chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+    }
+
+    function forceSplitFromUrls(container, urls, mode){
+      const clean = Array.from(new Set((urls||[]).map(normalizeUrl))).filter(Boolean);
+      if(clean.length <= 1) return false;
+
+      let cols = computeAutoCols(clean.length);
+      if(mode === '2x2') cols = 2;
+      if(mode === '3col') cols = 3;
+
+      const gridStyle = `grid-template-columns: repeat(${cols}, 1fr); grid-auto-rows: minmax(200px, 1fr);`;
+
+      container.innerHTML = `
+        <div class="grid-split" style="${gridStyle}; width:100%; height:100%;">
+          ${clean.map((u,i) => `
+            <div class="split-tile" data-idx="${i}">
+              <div class="split-badge">↕ Arrastra · ${i+1}</div>
+              <iframe src="${u}" style="width:100%; height:100%; border:0;" frameborder="0" scrolling="auto"
+                allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+            </div>`).join("")}
+        </div>`;
+
+      attachDnDToSplit(container);
+      return true;
+    }
+
+    function ensureFsToolbar(index){
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if(!container) return;
+
+      removeFsToolbar(container);
+
+      const keep = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+      const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+
+      const tb = document.createElement('div');
+      tb.className = 'fs-toolbar';
+
+      const left = document.createElement('div');
+      left.className = 'fs-left';
+
+      const title = document.createElement('div');
+      title.className = 'fs-title';
+      title.textContent = `🖥️ Monitor ${index+1}`;
+
+      const chip = document.createElement('div');
+      chip.className = 'fs-chip';
+      chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+
+      left.appendChild(title);
+      left.appendChild(chip);
+
+      const actions = document.createElement('div');
+      actions.className = 'fs-actions';
+
+      const btnAuto = document.createElement('button');
+      btnAuto.className = 'fs-btn';
+      btnAuto.textContent = 'AUTO';
+
+      const btn2x2 = document.createElement('button');
+      btn2x2.className = 'fs-btn';
+      btn2x2.textContent = '2×2';
+
+      const btn3 = document.createElement('button');
+      btn3.className = 'fs-btn';
+      btn3.textContent = '3 COL';
+
+      const btnFocus = document.createElement('button');
+      btnFocus.className = 'fs-btn';
+      btnFocus.textContent = '🎯 Focus';
+
+      const setActive = (mode)=>{
+        [btnAuto,btn2x2,btn3].forEach(b=>b.classList.remove('active'));
+        if(mode === 'auto') btnAuto.classList.add('active');
+        if(mode === '2x2') btn2x2.classList.add('active');
+        if(mode === '3col') btn3.classList.add('active');
+      };
+
+      const applyMode = (mode)=>{
+        localStorage.setItem(FS_LAYOUT_KEY(index), mode);
+        setActive(mode);
+
+        const ok = applyGridLayout(container, mode);
+        if(!ok){
+          const keepNow = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+          if(keepNow){
+            const urls = getAllIframeUrls(container);
+            forceSplitFromUrls(container, urls, mode);
+          }
+        }
+        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+      };
+
+      btnAuto.onclick = ()=> applyMode('auto');
+      btn2x2.onclick  = ()=> applyMode('2x2');
+      btn3.onclick    = ()=> applyMode('3col');
+
+      btnFocus.onclick = ()=>{
+        const grid = container.querySelector('.grid-split');
+        if(!grid){
+          const urls = getAllIframeUrls(container);
+          if(urls.length > 1){
+            const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+            forceSplitFromUrls(container, urls, mode);
+          }
+        }
+        const firstTile = container.querySelector('.split-tile');
+        toggleFocus(index, firstTile);
+        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+      };
+
+      const keepWrap = document.createElement('label');
+      keepWrap.className = 'fs-toggle';
+      keepWrap.innerHTML = `<input type="checkbox" ${keep?'checked':''}> Mantener Split`;
+      keepWrap.querySelector('input').addEventListener('change', (e)=>{
+        const on = !!e.target.checked;
+        localStorage.setItem(FS_KEEP_KEY(index), on ? '1' : '0');
+        if(on && !container.querySelector('.grid-split')){
+          const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+          const urls = getAllIframeUrls(container);
+          forceSplitFromUrls(container, urls, mode);
+        }
+        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+      });
+
+      const btnExit = document.createElement('button');
+      btnExit.className = 'fs-btn';
+      btnExit.textContent = '❌ Salir';
+      btnExit.onclick = ()=> toggleFullscreenGrafico(index);
+
+      actions.appendChild(btnAuto);
+      actions.appendChild(btn2x2);
+      actions.appendChild(btn3);
+      actions.appendChild(btnFocus);
+      actions.appendChild(keepWrap);
+      actions.appendChild(btnExit);
+
+      tb.appendChild(left);
+      tb.appendChild(actions);
+      container.appendChild(tb);
+
+      setActive(layout);
+      applyMode(layout);
+
+      // ✅ Auto-hide (solo si NO está en focus)
+      let hideTimer = null;
+      function showTb(){
+        if(tb.classList.contains('fs-pinned')) return;
+        tb.classList.remove('fs-hidden');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 1400);
+      }
+      function hideTb(){
+        if(tb.classList.contains('fs-pinned')) return;
+        clearTimeout(hideTimer);
+        tb.classList.add('fs-hidden');
+      }
+
+      // arranque oculto si no pinned
+      setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 900);
+
+      container.addEventListener('mousemove', (e)=>{
+        if(tb.classList.contains('fs-pinned')) return;
+        if(e.clientY < 110) showTb();
+      }, { passive:true });
+
+      tb.addEventListener('mouseenter', showTb);
+      tb.addEventListener('mouseleave', ()=>{ if(!tb.classList.contains('fs-pinned')) hideTimer = setTimeout(hideTb, 900); });
+
+      // Si focus ya estaba activo (por restore), pin
+      if(focusState.has(index) || localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
+        tb.classList.add('fs-pinned');
+        tb.classList.remove('fs-hidden');
+      }
+    }
+
+    function renderIframesInContainer(index, urls) {
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if (!container) return;
+      const cleanUrls = (urls||[]).map(normalizeUrl).filter(Boolean);
+      if (!cleanUrls.length) { alert("Selecciona al menos 1 sitio."); return; }
+
+      const keepSplit = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+      const split = (document.getElementById(`splitMode${index}`)?.checked || keepSplit) && cleanUrls.length > 1;
+
+      if (split) {
+        const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+        forceSplitFromUrls(container, cleanUrls, mode);
+      } else if (cleanUrls.length === 1) {
+        container.innerHTML = `<iframe id="iframe-${index}-0" src="${cleanUrls[0]}" style="width:100%; height:100%; border:0;" frameborder="0" scrolling="auto" allow="fullscreen; clipboard-read; clipboard-write"></iframe>`;
+      } else {
+        const tabs = cleanUrls.map((u, i) => `<button class="tab ${i===0?'active':''}" data-tab="${i}" onclick="activarTab(${index}, ${i})">${new URL(u).hostname}</button>`).join("");
+        const iframes = cleanUrls.map((u, i) => `<iframe id="iframe-${index}-${i}" src="${u}" style="width:100%; height:calc(100% - 46px); border:0; display:${i===0?'block':'none'};" frameborder="0" scrolling="auto" allow="fullscreen; clipboard-read; clipboard-write"></iframe>`).join("");
+        container.innerHTML = `<div class="tabs" id="tabs-${index}">${tabs}</div><div style="width:100%; height:calc(100% - 46px);">${iframes}</div>`;
+      }
+
+      if(container.classList.contains('fullscreen-container')){
+        ensureFsToolbar(index);
+        attachDnDToSplit(container);
+      }
+    }
+
+    function activarTab(index, i) {
+      const tabsWrap = document.getElementById(`tabs-${index}`); if (!tabsWrap) return;
+      tabsWrap.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      const target = tabsWrap.querySelector(`.tab[data-tab='${i}']`); if (target) target.classList.add("active");
+      const container = document.querySelector(`.player-container[data-index='${index}']`); if (!container) return;
+      container.querySelectorAll("iframe[id^='iframe-']").forEach((f, idx) => { f.style.display = (idx === i) ? "block" : "none"; });
+    }
+
+    function cargarGraficoTV(index) {
+      const seleccion = getSelectedSites(index);
+      const urls = (seleccion.length > 0) ? seleccion : ["https://cuervo-123.github.io/GLOBALTV4YOUPLUS/"];
+      renderIframesInContainer(index, urls);
+    }
+    function quitarGraficoTV(index) {
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if (container) container.innerHTML = `<video id="player${index + 1}" controls></video>`;
+    }
+
+    /* ===== Fullscreen ===== */
+    function requestFS(el){
+      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if(fn) { try{ fn.call(el); return true; } catch(e){ } }
+      return false;
+    }
+    function exitFS(){
+      const fn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if(fn) { try{ fn.call(document); return true; } catch(e){ } }
+      return false;
+    }
+    function isFSActive(){
+      return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    }
+
+    function toggleFullscreenGrafico(index) {
+      const container = document.querySelector(`.player-container[data-index='${index}']`);
+      if (!container) return;
+
+      const hasIframe = !!container.querySelector('iframe');
+      const hasVideo  = !!container.querySelector('video');
+      if (!hasIframe && !hasVideo) { alert("No hay contenido en esta pantalla."); return; }
+
+      const entering = !container.classList.contains('fullscreen-container');
+
+      if (entering) {
+        requestFS(container);
+        container.classList.add('fullscreen-container');
+        ensureFsToolbar(index);
+        attachDnDToSplit(container);
+
+        if(localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
+          const firstTile = container.querySelector('.split-tile');
+          if(firstTile) enterFocus(index, firstTile);
+        }
+      } else {
+        exitFocus(index);
+        removeFsToolbar(container);
+        container.classList.remove('fullscreen-container');
+        if (isFSActive()) exitFS();
+      }
+    }
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key !== 'Escape') return;
+      const active = document.querySelector('.player-container.fullscreen-container');
+      if(active){
+        const idx = Number(active.getAttribute('data-index') || '-1');
+        if(idx >= 0) exitFocus(idx);
+        removeFsToolbar(active);
+        active.classList.remove('fullscreen-container');
+      }
+      if(isFSActive()) exitFS();
+    });
+
+    /* ===== Doble pantalla ===== */
+    function activarPantallaCompletaSimulada(idContenedor) {
+      const el = document.getElementById(idContenedor);
+      if (!el) return;
+      el.classList.add('fullscreen-simulado');
+      el.style.display = 'flex';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    function salirPantallaCompletaSimulada(idContenedor) {
+      const el = document.getElementById(idContenedor);
+      if (!el) return;
+      el.classList.remove('fullscreen-simulado');
+      el.style.display = 'none';
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+    function abrirDosSitios(url1, url2) {
+      const f1 = document.getElementById('site1');
+      const f2 = document.getElementById('site2');
+      if (!f1 || !f2) return;
+      f1.classList.remove('cargado'); f2.classList.remove('cargado');
+      f1.addEventListener('load', () => f1.classList.add('cargado'), { once: true });
+      f2.addEventListener('load', () => f2.classList.add('cargado'), { once: true });
+      f1.src = (url1 || '').trim();
+      f2.src = (url2 || '').trim();
+      activarPantallaCompletaSimulada('wrapper-doble');
+    }
+    function abrirDesdeInputsDoble() {
+      const u1 = document.getElementById('dualUrl1').value.trim();
+      const u2 = document.getElementById('dualUrl2').value.trim();
+      if (!u1 || !u2) { alert('Escribe ambas URLs.'); return; }
+      abrirDosSitios(u1, u2);
+    }
+
+    /* ===== Stubs ===== */
+    function guardarSeleccionSitios(index){ alert("Guardado: ya se guarda automático al seleccionar. ✅"); }
+    function limpiarSeleccionSitios(index){ lbClearAll(index); alert("Selección limpiada ✅"); }
+
+    /* ================== INIT ================== */
+    document.addEventListener("DOMContentLoaded", () => {
+      [0,1,2,3].forEach(initSitePicker);
+      loadM3UFiles(false);
+
+      // Botones Fullscreen por monitor
+      for (let i = 0; i < 4; i++) {
+        const paneles = document.querySelectorAll(".botones-panel")[i * 3 + 2];
+        if (paneles && !paneles.querySelector(`#btnFullscreen${i}`)) {
+          const botonFull = document.createElement("button");
+          botonFull.textContent = "🔍 Fullscreen";
+          botonFull.id = `btnFullscreen${i}`;
+          botonFull.onclick = () => toggleFullscreenGrafico(i);
+          paneles.appendChild(botonFull);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
