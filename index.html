@@ -651,7 +651,7 @@
     const statusClear  = document.getElementById('statusClear');
     const statusAuto   = document.getElementById('statusAutoscroll');
     let _logBuf = [];
-    function renderLog(){ statusLogEl.textContent = _logBuf.join('\\n').slice(-20000); if(statusAuto.checked){ statusLogEl.scrollTop = statusLogEl.scrollHeight; } }
+    function renderLog(){ statusLogEl.textContent = _logBuf.join('\n').slice(-20000); if(statusAuto.checked){ statusLogEl.scrollTop = statusLogEl.scrollHeight; } }
     function log(){ const msg = Array.from(arguments).map(x => (typeof x === 'object') ? JSON.stringify(x) : String(x)).join(' '); console.log('[APP]', msg); _logBuf.push(msg); if(_logBuf.length>500) _logBuf = _logBuf.slice(-500); renderLog(); }
     function setStatus(msg){ log(msg); }
     statusToggle.addEventListener('click', ()=>{ const open = statusPanel.style.display === 'block'; statusPanel.style.display = open ? 'none' : 'block'; statusToggle.setAttribute('aria-expanded', String(!open)); });
@@ -666,43 +666,42 @@
 
     /* ================== Parser M3U ================== */
     function parseM3U(text) {
-  const clean = (text || "")
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n?/g, "\n");
+      const clean = (text || "")
+        .replace(/^\uFEFF/, "")
+        .replace(/\r\n?/g, "\n");
 
-  const lines = clean.split("\n");
-  const out = [];
+      const lines = clean.split("\n");
+      const out = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = (lines[i] || "").trim();
-    if (!line || line.startsWith("#EXTM3U")) continue;
+      for (let i = 0; i < lines.length; i++) {
+        const line = (lines[i] || "").trim();
+        if (!line || line.startsWith("#EXTM3U")) continue;
 
-    if (line.startsWith("#EXTINF")) {
-      let name = "Canal sin nombre";
-      const commaIdx = line.indexOf(",");
-      if (commaIdx !== -1 && commaIdx < line.length - 1) {
-        name = line.slice(commaIdx + 1).trim() || name;
+        if (line.startsWith("#EXTINF")) {
+          let name = "Canal sin nombre";
+          const commaIdx = line.indexOf(",");
+          if (commaIdx !== -1 && commaIdx < line.length - 1) {
+            name = line.slice(commaIdx + 1).trim() || name;
+          }
+
+          const url = (lines[i + 1] || "").trim();
+          if (url && /^https?:\/\//i.test(url)) {
+            out.push({ nombre: name, url });
+            i++; // saltamos la línea de URL
+          }
+          continue;
+        }
+
+        if (/^https?:\/\//i.test(line)) {
+          out.push({
+            nombre: line.split("/").slice(-1)[0] || "Canal",
+            url: line
+          });
+        }
       }
 
-      const url = (lines[i + 1] || "").trim();
-      if (url && /^https?:\/\//i.test(url)) {
-        out.push({ nombre: name, url });
-        i++; // saltamos la línea de URL
-      }
-      continue;
+      return out;
     }
-
-    if (/^https?:\/\//i.test(line)) {
-      out.push({
-        nombre: line.split("/").slice(-1)[0] || "Canal",
-        url: line
-      });
-    }
-  }
-
-  return out;
-}
-
 
     /* ================== Carrusel render ================== */
     let canalSeleccionado = null;
@@ -893,6 +892,15 @@
     function desbloquearAdulto(){ alert('Adultos: implementar PIN/clave.'); }
 
     /* ================== Sitios por monitor ================== */
+
+    // 🐦🔥 Logo global para todos los sitios (CUERVO LAVA)
+    const GLOBAL_SITE_LOGO = "assets/cuervo-lava.png";
+
+    // ✅ Siempre usa el mismo logo (no depende de Google favicon)
+    function faviconUrl(url){
+      return GLOBAL_SITE_LOGO;
+    }
+
     const FAVORITE_SITES = [
       { label: "WELTRADE CENTRAL 1 ", url: "https://cuervo-123.github.io/trading-central/" },
       { label: "LATERAL VIEW PRP APP ", url: "https://cuervo-123.github.io/lateral-view-my-tv-station-pro-v3/" },
@@ -910,101 +918,112 @@
       { label: "WTVFREE APP", url: "https://cuervo-123.github.io/worldtv4you/" },
       { label: "PW APP PRO", url: "https://cuervo-123.github.io/Ximena-homepage/" }
     ];
-    const LS_KEY = (idx) => `siteSelection:${idx}`;
-    function hostFromUrl(url){ try { return new URL(url).hostname; } catch { return ''; } }
-    function faviconUrl(url){ const host = hostFromUrl(url); return host ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : ''; }
 
-    function renderLinkBox(index){
-      const grid = document.getElementById(`linkboxGrid${index}`);
-      if(!grid) return;
+const LS_KEY = (idx) => `siteSelection:${idx}`;
 
-      const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
-      grid.innerHTML = FAVORITE_SITES.map(s=>{
-        const selected = saved.includes(s.url) ? 'selected' : '';
-        const host = hostFromUrl(s.url);
-        const ico  = faviconUrl(s.url);
-        const safeUrl = s.url.replace(/"/g, '&quot;');
-        return `
-          <div class="site-card ${selected}" data-url="${safeUrl}" data-label="${s.label.toLowerCase()}" data-host="${(host||'').toLowerCase()}">
-            <div class="site-ico">${ico ? `<img src="${ico}" alt="ico">` : '🌐'}</div>
-            <div class="site-meta">
-              <div class="site-name" title="${s.label}">${s.label}</div>
-              <div class="site-host" title="${s.url}">${host || s.url}</div>
-            </div>
-          </div>`;
-      }).join('');
+function hostFromUrl(url){
+  try { return new URL(url).hostname; }
+  catch { return ''; }
+}
 
-      grid.addEventListener('click', (e)=>{
-        const card = e.target.closest('.site-card');
-        if(!card) return;
-        card.classList.toggle('selected');
-        persistSelectionFromCards(index);
-      }, { passive:true });
-    }
+// ✅ NO pongas faviconUrl aquí (ya está definida arriba con GLOBAL_SITE_LOGO)
 
-    function selectedUrlsFromCards(index){
-      const grid = document.getElementById(`linkboxGrid${index}`);
-      if(!grid) return [];
-      return Array.from(grid.querySelectorAll('.site-card.selected')).map(c=>c.getAttribute('data-url')).filter(Boolean);
-    }
-    function persistSelectionFromCards(index){
-      const urls = selectedUrlsFromCards(index);
-      localStorage.setItem(LS_KEY(index), JSON.stringify(urls));
-      const select = document.getElementById(`siteSelect${index}`);
-      if(select){
-        Array.from(select.options).forEach(o => { o.selected = urls.includes(o.value); });
-      }
-    }
+function renderLinkBox(index){
+  const grid = document.getElementById(`linkboxGrid${index}`);
+  if(!grid) return;
 
-    function attachFilter(index){
-      const input = document.getElementById(`lbFilter${index}`);
-      const grid  = document.getElementById(`linkboxGrid${index}`);
-      if(!input || !grid) return;
-      input.addEventListener('input', ()=>{
-        const q = input.value.trim().toLowerCase();
-        grid.querySelectorAll('.site-card').forEach(card=>{
-          const byLabel = card.getAttribute('data-label') || '';
-          const byHost  = card.getAttribute('data-host') || '';
-          const visible = (!q) || byLabel.includes(q) || byHost.includes(q);
-          card.style.display = visible ? '' : 'none';
-        });
-      }, { passive:true });
-    }
+  const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
+  grid.innerHTML = FAVORITE_SITES.map(s=>{
+    const selected = saved.includes(s.url) ? 'selected' : '';
+    const host = hostFromUrl(s.url);
+    const ico  = faviconUrl(s.url); // ✅ ahora devuelve assets/cuervo-lava.png
+    const safeUrl = s.url.replace(/"/g, '&quot;');
+    return `
+      <div class="site-card ${selected}" data-url="${safeUrl}" data-label="${s.label.toLowerCase()}" data-host="${(host||'').toLowerCase()}">
+        <div class="site-ico">
+          <img src="${ico}" alt="logo"
+               onerror="this.onerror=null; this.parentNode.textContent='🐦';">
+        </div>
+        <div class="site-meta">
+          <div class="site-name" title="${s.label}">${s.label}</div>
+          <div class="site-host" title="${s.url}">${host || s.url}</div>
+        </div>
+      </div>`;
+  }).join('');
 
-    function lbSelectAll(index){
-      const grid = document.getElementById(`linkboxGrid${index}`);
-      if(!grid) return;
-      grid.querySelectorAll('.site-card').forEach(c => { if(c.style.display !== 'none') c.classList.add('selected'); });
-      persistSelectionFromCards(index);
-    }
-    function lbClearAll(index){
-      const grid = document.getElementById(`linkboxGrid${index}`);
-      if(!grid) return;
-      grid.querySelectorAll('.site-card').forEach(c => c.classList.remove('selected'));
-      persistSelectionFromCards(index);
-    }
+  grid.addEventListener('click', (e)=>{
+    const card = e.target.closest('.site-card');
+    if(!card) return;
+    card.classList.toggle('selected');
+    persistSelectionFromCards(index);
+  }, { passive:true });
+}
 
-    function initSitePicker(index) {
-      const select = document.getElementById(`siteSelect${index}`);
-      if (select) {
-        select.innerHTML = FAVORITE_SITES.map(s => `<option value="${s.url}">${s.label} — ${s.url}</option>`).join("");
-        const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
-        Array.from(select.options).forEach(opt => { opt.selected = saved.includes(opt.value); });
-      }
-      renderLinkBox(index);
-      attachFilter(index);
-    }
+function selectedUrlsFromCards(index){
+  const grid = document.getElementById(`linkboxGrid${index}`);
+  if(!grid) return [];
+  return Array.from(grid.querySelectorAll('.site-card.selected'))
+    .map(c=>c.getAttribute('data-url'))
+    .filter(Boolean);
+}
 
-    const normalizeUrl = (u) => {
+function persistSelectionFromCards(index){
+  const urls = selectedUrlsFromCards(index);
+  localStorage.setItem(LS_KEY(index), JSON.stringify(urls));
+  const select = document.getElementById(`siteSelect${index}`);
+  if(select){
+    Array.from(select.options).forEach(o => { o.selected = urls.includes(o.value); });
+  }
+}
+
+function attachFilter(index){
+  const input = document.getElementById(`lbFilter${index}`);
+  const grid  = document.getElementById(`linkboxGrid${index}`);
+  if(!input || !grid) return;
+  input.addEventListener('input', ()=>{
+    const q = input.value.trim().toLowerCase();
+    grid.querySelectorAll('.site-card').forEach(card=>{
+      const byLabel = card.getAttribute('data-label') || '';
+      const byHost  = card.getAttribute('data-host') || '';
+      const visible = (!q) || byLabel.includes(q) || byHost.includes(q);
+      card.style.display = visible ? '' : 'none';
+    });
+  }, { passive:true });
+}
+
+function lbSelectAll(index){
+  const grid = document.getElementById(`linkboxGrid${index}`);
+  if(!grid) return;
+  grid.querySelectorAll('.site-card').forEach(c => { if(c.style.display !== 'none') c.classList.add('selected'); });
+  persistSelectionFromCards(index);
+}
+
+function lbClearAll(index){
+  const grid = document.getElementById(`linkboxGrid${index}`);
+  if(!grid) return;
+  grid.querySelectorAll('.site-card').forEach(c => c.classList.remove('selected'));
+  persistSelectionFromCards(index);
+}
+
+function initSitePicker(index) {
+  const select = document.getElementById(`siteSelect${index}`);
+  if (select) {
+    select.innerHTML = FAVORITE_SITES
+      .map(s => `<option value="${s.url}">${s.label} — ${s.url}</option>`)
+      .join("");
+    const saved = JSON.parse(localStorage.getItem(LS_KEY(index)) || "[]");
+    Array.from(select.options).forEach(opt => { opt.selected = saved.includes(opt.value); });
+  }
+  renderLinkBox(index);
+  attachFilter(index);
+}
+
+const normalizeUrl = (u) => {
   if (!u) return "";
-
   let url = u.trim();
-
-  // Si NO empieza por http:// o https://, lo corregimos
   if (!/^https?:\/\//i.test(url)) {
     url = "https://" + url.replace(/^\/+/, "");
   }
-
   return url;
 };
 
@@ -1018,667 +1037,703 @@ function getSelectedSites(index){
     : [];
 }
 
-
-    /* ===== FS prefs ===== */
-    const FS_KEEP_KEY = (i)=>`fsKeepSplit:${i}`;
-    const FS_LAYOUT_KEY = (i)=>`fsLayout:${i}`;
-    const FS_FOCUS_KEY  = (i)=>`fsFocusOn:${i}`;
-
-    /* ===== Focus state ===== */
-    const focusState = new Map();
-
-    function computeAutoCols(n){
-      if(n <= 1) return 1;
-      if(n === 2) return 2;
-      if(n === 3) return 3;
-      return 3;
-    }
-
-    function applyGridLayout(container, mode){
-      const grid = container.querySelector('.grid-split');
-      if(!grid) return false;
-      const tiles = Array.from(grid.querySelectorAll('.split-tile'));
-      const n = Math.max(1, tiles.length);
-      let cols = computeAutoCols(n);
-      if(mode === '2x2') cols = 2;
-      if(mode === '3col') cols = 3;
-      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      grid.style.gridAutoRows = `minmax(200px, 1fr)`;
-      return true;
-    }
-
-    function getAllIframeUrls(container){
-      return Array.from(container.querySelectorAll('iframe'))
-        .map(f => f.getAttribute('src') || '')
-        .filter(Boolean);
-    }
-
-    function getModeLabel(container){
-      const urls = getAllIframeUrls(container);
-      const n = urls.length;
-      const isSplit = !!container.querySelector('.grid-split');
-      const isTabs  = !!container.querySelector('.tabs');
-      if(isSplit) return `Split · ${n} app${n===1?'':'s'} (drag)`;
-      if(isTabs)  return `Tabs · ${n} app${n===1?'':'s'}`;
-      return (n ? `App · ${n}` : 'Vacío');
-    }
-
-    function removeFsToolbar(container){
-      const tb = container.querySelector('.fs-toolbar');
-      if(tb) tb.remove();
-    }
-
-    /* ===== Drag manual para grid split ===== */
-    function attachDnDToSplit(container){
-      const grid = container.querySelector('.grid-split');
-      if(!grid) return;
-      if(grid.__dndAttached) return;
-      grid.__dndAttached = true;
-
-      let draggingTile = null;
-
-      const tiles = () => Array.from(grid.querySelectorAll('.split-tile'));
-
-      function setDragging(tile, on){
-        if(!tile) return;
-        tile.classList.toggle('dragging', !!on);
-        const iframe = tile.querySelector('iframe');
-        if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
-      }
-
-      function getPoint(e){
-        if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        return { x: e.clientX, y: e.clientY };
-      }
-
-      function findTileAt(x,y){
-        const el = document.elementFromPoint(x,y);
-        if(!el) return null;
-        return el.closest('.split-tile');
-      }
-
-      function refreshBadges(){
-        tiles().forEach((tile,i)=>{
-          tile.setAttribute('data-idx', String(i));
-          const badge = tile.querySelector('.split-badge');
-          if(badge) badge.textContent = `↕ Arrastra · ${i+1}`;
-        });
-      }
-
-      function onMove(e){
-        if(!draggingTile) return;
-        const p = getPoint(e);
-        const over = findTileAt(p.x, p.y);
-        if(!over || over === draggingTile) return;
-
-        const all = tiles();
-        const draggingIndex = all.indexOf(draggingTile);
-        const overIndex = all.indexOf(over);
-
-        if(draggingIndex < overIndex){
-          grid.insertBefore(draggingTile, over.nextSibling);
-        }else{
-          grid.insertBefore(draggingTile, over);
-        }
-        refreshBadges();
-      }
-
-      function onUp(){
-        if(!draggingTile) return;
-        setDragging(draggingTile, false);
-        draggingTile = null;
-
-        window.removeEventListener('mousemove', onMove, true);
-        window.removeEventListener('mouseup', onUp, true);
-        window.removeEventListener('touchmove', onMove, true);
-        window.removeEventListener('touchend', onUp, true);
-      }
-
-      grid.addEventListener('mousedown', (e)=>{
-        const badge = e.target.closest('.split-badge');
-        if(!badge) return;
-        const tile = badge.closest('.split-tile');
-        if(!tile) return;
-        e.preventDefault();
-        draggingTile = tile;
-        setDragging(draggingTile, true);
-
-        window.addEventListener('mousemove', onMove, true);
-        window.addEventListener('mouseup', onUp, true);
-      }, true);
-
-      grid.addEventListener('touchstart', (e)=>{
-        const badge = e.target.closest('.split-badge');
-        if(!badge) return;
-        const tile = badge.closest('.split-tile');
-        if(!tile) return;
-        e.preventDefault();
-        draggingTile = tile;
-        setDragging(draggingTile, true);
-
-        window.addEventListener('touchmove', onMove, true);
-        window.addEventListener('touchend', onUp, true);
-      }, true);
-
-      // dblclick -> focus
-      grid.addEventListener('dblclick', (e)=>{
-        const tile = e.target.closest('.split-tile');
-        if(!tile) return;
-        const idx = Number(container.getAttribute('data-index') || '-1');
-        if(idx >= 0) toggleFocus(idx, tile);
-      }, true);
-
-      refreshBadges();
-    }
-
-    /* ===== Drag dentro del dock (horizontal) ===== */
-    function attachDockDnD(dockEl){
-      if(!dockEl || dockEl.__dockDndAttached) return;
-      dockEl.__dockDndAttached = true;
-
-      let draggingTile = null;
-
-      const tiles = ()=> Array.from(dockEl.querySelectorAll('.split-tile'));
-
-      function setDragging(tile, on){
-        if(!tile) return;
-        tile.classList.toggle('dragging', !!on);
-        const iframe = tile.querySelector('iframe');
-        if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
-      }
-
-      function getPoint(e){
-        if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        return { x: e.clientX, y: e.clientY };
-      }
-
-      function findTileAt(x,y){
-        const el = document.elementFromPoint(x,y);
-        if(!el) return null;
-        return el.closest('.split-tile');
-      }
-
-      function onMove(e){
-        if(!draggingTile) return;
-        const p = getPoint(e);
-        const over = findTileAt(p.x, p.y);
-        if(!over || over === draggingTile) return;
-        if(!dockEl.contains(over)) return;
-
-        const all = tiles();
-        const a = all.indexOf(draggingTile);
-        const b = all.indexOf(over);
-        if(a < 0 || b < 0) return;
-
-        if(a < b){
-          dockEl.insertBefore(draggingTile, over.nextSibling);
-        }else{
-          dockEl.insertBefore(draggingTile, over);
-        }
-      }
-
-      function onUp(){
-        if(!draggingTile) return;
-        setDragging(draggingTile, false);
-        draggingTile = null;
-        window.removeEventListener('mousemove', onMove, true);
-        window.removeEventListener('mouseup', onUp, true);
-        window.removeEventListener('touchmove', onMove, true);
-        window.removeEventListener('touchend', onUp, true);
-      }
-
-      dockEl.addEventListener('mousedown', (e)=>{
-        const badge = e.target.closest('.split-badge');
-        if(!badge) return;
-        const tile = badge.closest('.split-tile');
-        if(!tile) return;
-        if(!dockEl.contains(tile)) return;
-        e.preventDefault();
-        draggingTile = tile;
-        setDragging(draggingTile, true);
-        window.addEventListener('mousemove', onMove, true);
-        window.addEventListener('mouseup', onUp, true);
-      }, true);
-
-      dockEl.addEventListener('touchstart', (e)=>{
-        const badge = e.target.closest('.split-badge');
-        if(!badge) return;
-        const tile = badge.closest('.split-tile');
-        if(!tile) return;
-        if(!dockEl.contains(tile)) return;
-        e.preventDefault();
-        draggingTile = tile;
-        setDragging(draggingTile, true);
-        window.addEventListener('touchmove', onMove, true);
-        window.addEventListener('touchend', onUp, true);
-      }, true);
-    }
-
-    /* ===== Focus Mode ===== */
-    function pinToolbarForFocus(container, pinned){
-      const tb = container?.querySelector('.fs-toolbar');
-      if(!tb) return;
-      if(pinned){
-        tb.classList.add('fs-pinned');
-        tb.classList.remove('fs-hidden'); // ✅ siempre visible
-      }else{
-        tb.classList.remove('fs-pinned');
-      }
-    }
-
-    function enterFocus(index, tileToFocus){
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if(!container) return;
-
-      if(focusState.has(index)) return;
-
-      const grid = container.querySelector('.grid-split');
-      if(!grid){ alert('Focus solo aplica cuando estás en Vista dividida (Split).'); return; }
-
-      const tiles = Array.from(grid.querySelectorAll('.split-tile'));
-      if(tiles.length <= 1){ alert('Focus necesita 2 o más apps.'); return; }
-
-      const overlay = document.createElement('div');
-      overlay.className = 'focus-overlay';
-
-      const hint = document.createElement('div');
-      hint.className = 'focus-hint';
-      hint.textContent = 'FOCUS: click en una mini para subirla · arrastra minis para ordenar · botón 🎯 para salir';
-
-      const main = document.createElement('div');
-      main.className = 'focus-main';
-
-      const dock = document.createElement('div');
-      dock.className = 'focus-dock';
-
-      overlay.appendChild(main);
-      overlay.appendChild(dock);
-      overlay.appendChild(hint);
-
-      focusState.set(index, { overlay, main, dock, gridRef: grid });
-
-      container.appendChild(overlay);
-
-      const primary = tileToFocus || tiles[0];
-      main.appendChild(primary);
-      tiles.forEach(t=>{ if(t !== primary) dock.appendChild(t); });
-
-      dock.addEventListener('click', (e)=>{
-        const t = e.target.closest('.split-tile');
-        if(!t) return;
-        const current = main.querySelector('.split-tile');
-        if(current && current !== t){
-          dock.insertBefore(current, dock.firstChild);
-        }
-        main.appendChild(t);
-      }, { passive:true });
-
-      // ✅ drag dentro del dock
-      attachDockDnD(dock);
-
-      // ✅ toolbar fija visible en focus
-      pinToolbarForFocus(container, true);
-
-      localStorage.setItem(FS_FOCUS_KEY(index), '1');
-      log('🎯 Focus ON monitor', index+1);
-    }
-
-    function exitFocus(index){
-      const st = focusState.get(index);
-      if(!st) return;
-
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if(!container) return;
-
-      const { overlay, gridRef } = st;
-
-      let grid = gridRef;
-      if(!grid || !grid.isConnected){
-        grid = document.createElement('div');
-        grid.className = 'grid-split';
-        grid.style.width = '100%';
-        grid.style.height = '100%';
-        container.innerHTML = '';
-        container.appendChild(grid);
-      }
-
-      const allTiles = Array.from(overlay.querySelectorAll('.split-tile'));
-      grid.innerHTML = '';
-      allTiles.forEach(t=> grid.appendChild(t));
-
-      overlay.remove();
-
-      grid.__dndAttached = false;
-      attachDnDToSplit(container);
-
-      focusState.delete(index);
-      localStorage.setItem(FS_FOCUS_KEY(index), '0');
-
-      // ✅ toolbar vuelve a autohide normal
-      pinToolbarForFocus(container, false);
-
-      const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
-      applyGridLayout(container, layout);
-
-      log('🎯 Focus OFF monitor', index+1);
-    }
-
-    function toggleFocus(index, tile){
-      if(focusState.has(index)) exitFocus(index);
-      else enterFocus(index, tile);
-
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      const chip = container?.querySelector('.fs-chip');
-      if(chip) chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
-    }
-
-    function forceSplitFromUrls(container, urls, mode){
-      const clean = Array.from(new Set((urls||[]).map(normalizeUrl))).filter(Boolean);
-      if(clean.length <= 1) return false;
-
-      let cols = computeAutoCols(clean.length);
-      if(mode === '2x2') cols = 2;
-      if(mode === '3col') cols = 3;
-
-      const gridStyle = `grid-template-columns: repeat(${cols}, 1fr); grid-auto-rows: minmax(200px, 1fr);`;
-
-      container.innerHTML = `
-        <div class="grid-split" style="${gridStyle}; width:100%; height:100%;">
-          ${clean.map((u,i) => `
-            <div class="split-tile" data-idx="${i}">
-              <div class="split-badge">↕ Arrastra · ${i+1}</div>
-              <iframe src="${u}" style="width:100%; height:100%; border:0;" frameborder="0" scrolling="auto"
-                allow="fullscreen; clipboard-read; clipboard-write"></iframe>
-            </div>`).join("")}
-        </div>`;
-
-      attachDnDToSplit(container);
-      return true;
-    }
-
-    function ensureFsToolbar(index){
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if(!container) return;
-
-      removeFsToolbar(container);
-
-      const keep = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
-      const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
-
-      const tb = document.createElement('div');
-      tb.className = 'fs-toolbar';
-
-      const left = document.createElement('div');
-      left.className = 'fs-left';
-
-      const title = document.createElement('div');
-      title.className = 'fs-title';
-      title.textContent = `🖥️ Monitor ${index+1}`;
-
-      const chip = document.createElement('div');
-      chip.className = 'fs-chip';
-      chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
-
-      left.appendChild(title);
-      left.appendChild(chip);
-
-      const actions = document.createElement('div');
-      actions.className = 'fs-actions';
-
-      const btnAuto = document.createElement('button');
-      btnAuto.className = 'fs-btn';
-      btnAuto.textContent = 'AUTO';
-
-      const btn2x2 = document.createElement('button');
-      btn2x2.className = 'fs-btn';
-      btn2x2.textContent = '2×2';
-
-      const btn3 = document.createElement('button');
-      btn3.className = 'fs-btn';
-      btn3.textContent = '3 COL';
-
-      const btnFocus = document.createElement('button');
-      btnFocus.className = 'fs-btn';
-      btnFocus.textContent = '🎯 Focus';
-
-      const setActive = (mode)=>{
-        [btnAuto,btn2x2,btn3].forEach(b=>b.classList.remove('active'));
-        if(mode === 'auto') btnAuto.classList.add('active');
-        if(mode === '2x2') btn2x2.classList.add('active');
-        if(mode === '3col') btn3.classList.add('active');
-      };
-
-      const applyMode = (mode)=>{
-        localStorage.setItem(FS_LAYOUT_KEY(index), mode);
-        setActive(mode);
-
-        const ok = applyGridLayout(container, mode);
-        if(!ok){
-          const keepNow = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
-          if(keepNow){
-            const urls = getAllIframeUrls(container);
-            forceSplitFromUrls(container, urls, mode);
-          }
-        }
-        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
-      };
-
-      btnAuto.onclick = ()=> applyMode('auto');
-      btn2x2.onclick  = ()=> applyMode('2x2');
-      btn3.onclick    = ()=> applyMode('3col');
-
-      btnFocus.onclick = ()=>{
-        const grid = container.querySelector('.grid-split');
-        if(!grid){
-          const urls = getAllIframeUrls(container);
-          if(urls.length > 1){
-            const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
-            forceSplitFromUrls(container, urls, mode);
-          }
-        }
-        const firstTile = container.querySelector('.split-tile');
-        toggleFocus(index, firstTile);
-        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
-      };
-
-      const keepWrap = document.createElement('label');
-      keepWrap.className = 'fs-toggle';
-      keepWrap.innerHTML = `<input type="checkbox" ${keep?'checked':''}> Mantener Split`;
-      keepWrap.querySelector('input').addEventListener('change', (e)=>{
-        const on = !!e.target.checked;
-        localStorage.setItem(FS_KEEP_KEY(index), on ? '1' : '0');
-        if(on && !container.querySelector('.grid-split')){
-          const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
-          const urls = getAllIframeUrls(container);
-          forceSplitFromUrls(container, urls, mode);
-        }
-        chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
-      });
-
-      const btnExit = document.createElement('button');
-      btnExit.className = 'fs-btn';
-      btnExit.textContent = '❌ Salir';
-      btnExit.onclick = ()=> toggleFullscreenGrafico(index);
-
-      actions.appendChild(btnAuto);
-      actions.appendChild(btn2x2);
-      actions.appendChild(btn3);
-      actions.appendChild(btnFocus);
-      actions.appendChild(keepWrap);
-      actions.appendChild(btnExit);
-
-      tb.appendChild(left);
-      tb.appendChild(actions);
-      container.appendChild(tb);
-
-      setActive(layout);
-      applyMode(layout);
-
-      // ✅ Auto-hide (solo si NO está en focus)
-      let hideTimer = null;
-      function showTb(){
-        if(tb.classList.contains('fs-pinned')) return;
-        tb.classList.remove('fs-hidden');
-        clearTimeout(hideTimer);
-        hideTimer = setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 1400);
-      }
-      function hideTb(){
-        if(tb.classList.contains('fs-pinned')) return;
-        clearTimeout(hideTimer);
-        tb.classList.add('fs-hidden');
-      }
-
-      // arranque oculto si no pinned
-      setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 900);
-
-      container.addEventListener('mousemove', (e)=>{
-        if(tb.classList.contains('fs-pinned')) return;
-        if(e.clientY < 110) showTb();
-      }, { passive:true });
-
-      tb.addEventListener('mouseenter', showTb);
-      tb.addEventListener('mouseleave', ()=>{ if(!tb.classList.contains('fs-pinned')) hideTimer = setTimeout(hideTb, 900); });
-
-      // Si focus ya estaba activo (por restore), pin
-      if(focusState.has(index) || localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
-        tb.classList.add('fs-pinned');
-        tb.classList.remove('fs-hidden');
-      }
-    }
-
-    function renderIframesInContainer(index, urls) {
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if (!container) return;
-      const cleanUrls = (urls||[]).map(normalizeUrl).filter(Boolean);
-      if (!cleanUrls.length) { alert("Selecciona al menos 1 sitio."); return; }
-
-      const keepSplit = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
-      const split = (document.getElementById(`splitMode${index}`)?.checked || keepSplit) && cleanUrls.length > 1;
-
-      if (split) {
-        const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
-        forceSplitFromUrls(container, cleanUrls, mode);
-      } else if (cleanUrls.length === 1) {
-        container.innerHTML = `<iframe id="iframe-${index}-0" src="${cleanUrls[0]}" style="width:100%; height:100%; border:0;" frameborder="0" scrolling="auto" allow="fullscreen; clipboard-read; clipboard-write"></iframe>`;
-      } else {
-        const tabs = cleanUrls.map((u, i) => `<button class="tab ${i===0?'active':''}" data-tab="${i}" onclick="activarTab(${index}, ${i})">${new URL(u).hostname}</button>`).join("");
-        const iframes = cleanUrls.map((u, i) => `<iframe id="iframe-${index}-${i}" src="${u}" style="width:100%; height:calc(100% - 46px); border:0; display:${i===0?'block':'none'};" frameborder="0" scrolling="auto" allow="fullscreen; clipboard-read; clipboard-write"></iframe>`).join("");
-        container.innerHTML = `<div class="tabs" id="tabs-${index}">${tabs}</div><div style="width:100%; height:calc(100% - 46px);">${iframes}</div>`;
-      }
-
-      if(container.classList.contains('fullscreen-container')){
-        ensureFsToolbar(index);
-        attachDnDToSplit(container);
-      }
-    }
-
-    function activarTab(index, i) {
-      const tabsWrap = document.getElementById(`tabs-${index}`); if (!tabsWrap) return;
-      tabsWrap.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      const target = tabsWrap.querySelector(`.tab[data-tab='${i}']`); if (target) target.classList.add("active");
-      const container = document.querySelector(`.player-container[data-index='${index}']`); if (!container) return;
-      container.querySelectorAll("iframe[id^='iframe-']").forEach((f, idx) => { f.style.display = (idx === i) ? "block" : "none"; });
-    }
-
-    function cargarGraficoTV(index) {
-      const seleccion = getSelectedSites(index);
-      const urls = (seleccion.length > 0) ? seleccion : ["https://cuervo-123.github.io/GLOBALTV4YOUPLUS/"];
-      renderIframesInContainer(index, urls);
-    }
-    function quitarGraficoTV(index) {
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if (container) container.innerHTML = `<video id="player${index + 1}" controls></video>`;
-    }
-
-    /* ===== Fullscreen ===== */
-    function requestFS(el){
-      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-      if(fn) { try{ fn.call(el); return true; } catch(e){ } }
-      return false;
-    }
-    function exitFS(){
-      const fn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-      if(fn) { try{ fn.call(document); return true; } catch(e){ } }
-      return false;
-    }
-    function isFSActive(){
-      return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
-    }
-
-    function toggleFullscreenGrafico(index) {
-      const container = document.querySelector(`.player-container[data-index='${index}']`);
-      if (!container) return;
-
-      const hasIframe = !!container.querySelector('iframe');
-      const hasVideo  = !!container.querySelector('video');
-      if (!hasIframe && !hasVideo) { alert("No hay contenido en esta pantalla."); return; }
-
-      const entering = !container.classList.contains('fullscreen-container');
-
-      if (entering) {
-        requestFS(container);
-        container.classList.add('fullscreen-container');
-        ensureFsToolbar(index);
-        attachDnDToSplit(container);
-
-        if(localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
-          const firstTile = container.querySelector('.split-tile');
-          if(firstTile) enterFocus(index, firstTile);
-        }
-      } else {
-        exitFocus(index);
-        removeFsToolbar(container);
-        container.classList.remove('fullscreen-container');
-        if (isFSActive()) exitFS();
-      }
-    }
-
-    document.addEventListener('keydown', (e)=>{
-      if(e.key !== 'Escape') return;
-      const active = document.querySelector('.player-container.fullscreen-container');
-      if(active){
-        const idx = Number(active.getAttribute('data-index') || '-1');
-        if(idx >= 0) exitFocus(idx);
-        removeFsToolbar(active);
-        active.classList.remove('fullscreen-container');
-      }
-      if(isFSActive()) exitFS();
+/* ===== FS prefs ===== */
+const FS_KEEP_KEY = (i)=>`fsKeepSplit:${i}`;
+const FS_LAYOUT_KEY = (i)=>`fsLayout:${i}`;
+const FS_FOCUS_KEY  = (i)=>`fsFocusOn:${i}`;
+
+/* ===== Focus state ===== */
+const focusState = new Map();
+
+function computeAutoCols(n){
+  if(n <= 1) return 1;
+  if(n === 2) return 2;
+  if(n === 3) return 3;
+  return 3;
+}
+
+function applyGridLayout(container, mode){
+  const grid = container.querySelector('.grid-split');
+  if(!grid) return false;
+  const tiles = Array.from(grid.querySelectorAll('.split-tile'));
+  const n = Math.max(1, tiles.length);
+  let cols = computeAutoCols(n);
+  if(mode === '2x2') cols = 2;
+  if(mode === '3col') cols = 3;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.gridAutoRows = `minmax(200px, 1fr)`;
+  return true;
+}
+
+function getAllIframeUrls(container){
+  return Array.from(container.querySelectorAll('iframe'))
+    .map(f => f.getAttribute('src') || '')
+    .filter(Boolean);
+}
+
+function getModeLabel(container){
+  const urls = getAllIframeUrls(container);
+  const n = urls.length;
+  const isSplit = !!container.querySelector('.grid-split');
+  const isTabs  = !!container.querySelector('.tabs');
+  if(isSplit) return `Split · ${n} app${n===1?'':'s'} (drag)`;
+  if(isTabs)  return `Tabs · ${n} app${n===1?'':'s'}`;
+  return (n ? `App · ${n}` : 'Vacío');
+}
+
+function removeFsToolbar(container){
+  const tb = container.querySelector('.fs-toolbar');
+  if(tb) tb.remove();
+}
+
+/* ===== Drag manual para grid split ===== */
+function attachDnDToSplit(container){
+  const grid = container.querySelector('.grid-split');
+  if(!grid) return;
+  if(grid.__dndAttached) return;
+  grid.__dndAttached = true;
+
+  let draggingTile = null;
+
+  const tiles = () => Array.from(grid.querySelectorAll('.split-tile'));
+
+  function setDragging(tile, on){
+    if(!tile) return;
+    tile.classList.toggle('dragging', !!on);
+    const iframe = tile.querySelector('iframe');
+    if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
+  }
+
+  function getPoint(e){
+    if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function findTileAt(x,y){
+    const el = document.elementFromPoint(x,y);
+    if(!el) return null;
+    return el.closest('.split-tile');
+  }
+
+  function refreshBadges(){
+    tiles().forEach((tile,i)=>{
+      tile.setAttribute('data-idx', String(i));
+      const badge = tile.querySelector('.split-badge');
+      if(badge) badge.textContent = `↕ Arrastra · ${i+1}`;
     });
+  }
 
-    /* ===== Doble pantalla ===== */
-    function activarPantallaCompletaSimulada(idContenedor) {
-      const el = document.getElementById(idContenedor);
-      if (!el) return;
-      el.classList.add('fullscreen-simulado');
-      el.style.display = 'flex';
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
+  function onMove(e){
+    if(!draggingTile) return;
+    const p = getPoint(e);
+    const over = findTileAt(p.x, p.y);
+    if(!over || over === draggingTile) return;
+
+    const all = tiles();
+    const draggingIndex = all.indexOf(draggingTile);
+    const overIndex = all.indexOf(over);
+
+    if(draggingIndex < overIndex){
+      grid.insertBefore(draggingTile, over.nextSibling);
+    }else{
+      grid.insertBefore(draggingTile, over);
     }
-    function salirPantallaCompletaSimulada(idContenedor) {
-      const el = document.getElementById(idContenedor);
-      if (!el) return;
-      el.classList.remove('fullscreen-simulado');
-      el.style.display = 'none';
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
+    refreshBadges();
+  }
+
+  function onUp(){
+    if(!draggingTile) return;
+    setDragging(draggingTile, false);
+    draggingTile = null;
+
+    window.removeEventListener('mousemove', onMove, true);
+    window.removeEventListener('mouseup', onUp, true);
+    window.removeEventListener('touchmove', onMove, true);
+    window.removeEventListener('touchend', onUp, true);
+  }
+
+  grid.addEventListener('mousedown', (e)=>{
+    const badge = e.target.closest('.split-badge');
+    if(!badge) return;
+    const tile = badge.closest('.split-tile');
+    if(!tile) return;
+    e.preventDefault();
+    draggingTile = tile;
+    setDragging(draggingTile, true);
+
+    window.addEventListener('mousemove', onMove, true);
+    window.addEventListener('mouseup', onUp, true);
+  }, true);
+
+  grid.addEventListener('touchstart', (e)=>{
+    const badge = e.target.closest('.split-badge');
+    if(!badge) return;
+    const tile = badge.closest('.split-tile');
+    if(!tile) return;
+    e.preventDefault();
+    draggingTile = tile;
+    setDragging(draggingTile, true);
+
+    window.addEventListener('touchmove', onMove, true);
+    window.addEventListener('touchend', onUp, true);
+  }, true);
+
+  // dblclick -> focus
+  grid.addEventListener('dblclick', (e)=>{
+    const tile = e.target.closest('.split-tile');
+    if(!tile) return;
+    const idx = Number(container.getAttribute('data-index') || '-1');
+    if(idx >= 0) toggleFocus(idx, tile);
+  }, true);
+
+  refreshBadges();
+}
+
+/* ===== Drag dentro del dock (horizontal) ===== */
+function attachDockDnD(dockEl){
+  if(!dockEl || dockEl.__dockDndAttached) return;
+  dockEl.__dockDndAttached = true;
+
+  let draggingTile = null;
+
+  const tiles = ()=> Array.from(dockEl.querySelectorAll('.split-tile'));
+
+  function setDragging(tile, on){
+    if(!tile) return;
+    tile.classList.toggle('dragging', !!on);
+    const iframe = tile.querySelector('iframe');
+    if(iframe) iframe.style.pointerEvents = on ? 'none' : '';
+  }
+
+  function getPoint(e){
+    if(e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function findTileAt(x,y){
+    const el = document.elementFromPoint(x,y);
+    if(!el) return null;
+    return el.closest('.split-tile');
+  }
+
+  function onMove(e){
+    if(!draggingTile) return;
+    const p = getPoint(e);
+    const over = findTileAt(p.x, p.y);
+    if(!over || over === draggingTile) return;
+    if(!dockEl.contains(over)) return;
+
+    const all = tiles();
+    const a = all.indexOf(draggingTile);
+    const b = all.indexOf(over);
+    if(a < 0 || b < 0) return;
+
+    if(a < b){
+      dockEl.insertBefore(draggingTile, over.nextSibling);
+    }else{
+      dockEl.insertBefore(draggingTile, over);
     }
-    function abrirDosSitios(url1, url2) {
-      const f1 = document.getElementById('site1');
-      const f2 = document.getElementById('site2');
-      if (!f1 || !f2) return;
-      f1.classList.remove('cargado'); f2.classList.remove('cargado');
-      f1.addEventListener('load', () => f1.classList.add('cargado'), { once: true });
-      f2.addEventListener('load', () => f2.classList.add('cargado'), { once: true });
-      f1.src = (url1 || '').trim();
-      f2.src = (url2 || '').trim();
-      activarPantallaCompletaSimulada('wrapper-doble');
+  }
+
+  function onUp(){
+    if(!draggingTile) return;
+    setDragging(draggingTile, false);
+    draggingTile = null;
+    window.removeEventListener('mousemove', onMove, true);
+    window.removeEventListener('mouseup', onUp, true);
+    window.removeEventListener('touchmove', onMove, true);
+    window.removeEventListener('touchend', onUp, true);
+  }
+
+  dockEl.addEventListener('mousedown', (e)=>{
+    const badge = e.target.closest('.split-badge');
+    if(!badge) return;
+    const tile = badge.closest('.split-tile');
+    if(!tile) return;
+    if(!dockEl.contains(tile)) return;
+    e.preventDefault();
+    draggingTile = tile;
+    setDragging(draggingTile, true);
+    window.addEventListener('mousemove', onMove, true);
+    window.addEventListener('mouseup', onUp, true);
+  }, true);
+
+  dockEl.addEventListener('touchstart', (e)=>{
+    const badge = e.target.closest('.split-badge');
+    if(!badge) return;
+    const tile = badge.closest('.split-tile');
+    if(!tile) return;
+    if(!dockEl.contains(tile)) return;
+    e.preventDefault();
+    draggingTile = tile;
+    setDragging(draggingTile, true);
+    window.addEventListener('touchmove', onMove, true);
+    window.addEventListener('touchend', onUp, true);
+  }, true);
+}
+
+/* ===== Focus Mode ===== */
+function pinToolbarForFocus(container, pinned){
+  const tb = container?.querySelector('.fs-toolbar');
+  if(!tb) return;
+  if(pinned){
+    tb.classList.add('fs-pinned');
+    tb.classList.remove('fs-hidden'); // ✅ siempre visible
+  }else{
+    tb.classList.remove('fs-pinned');
+  }
+}
+
+function enterFocus(index, tileToFocus){
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  if(!container) return;
+
+  if(focusState.has(index)) return;
+
+  const grid = container.querySelector('.grid-split');
+  if(!grid){ alert('Focus solo aplica cuando estás en Vista dividida (Split).'); return; }
+
+  const tiles = Array.from(grid.querySelectorAll('.split-tile'));
+  if(tiles.length <= 1){ alert('Focus necesita 2 o más apps.'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'focus-overlay';
+
+  const hint = document.createElement('div');
+  hint.className = 'focus-hint';
+  hint.textContent = 'FOCUS: click en una mini para subirla · arrastra minis para ordenar · botón 🎯 para salir';
+
+  const main = document.createElement('div');
+  main.className = 'focus-main';
+
+  const dock = document.createElement('div');
+  dock.className = 'focus-dock';
+
+  overlay.appendChild(main);
+  overlay.appendChild(dock);
+  overlay.appendChild(hint);
+
+  focusState.set(index, { overlay, main, dock, gridRef: grid });
+
+  container.appendChild(overlay);
+
+  const primary = tileToFocus || tiles[0];
+  main.appendChild(primary);
+  tiles.forEach(t=>{ if(t !== primary) dock.appendChild(t); });
+
+  dock.addEventListener('click', (e)=>{
+    const t = e.target.closest('.split-tile');
+    if(!t) return;
+    const current = main.querySelector('.split-tile');
+    if(current && current !== t){
+      dock.insertBefore(current, dock.firstChild);
     }
-    function abrirDesdeInputsDoble() {
-      const u1 = document.getElementById('dualUrl1').value.trim();
-      const u2 = document.getElementById('dualUrl2').value.trim();
-      if (!u1 || !u2) { alert('Escribe ambas URLs.'); return; }
-      abrirDosSitios(u1, u2);
+    main.appendChild(t);
+  }, { passive:true });
+
+  // ✅ drag dentro del dock
+  attachDockDnD(dock);
+
+  // ✅ toolbar fija visible en focus
+  pinToolbarForFocus(container, true);
+
+  localStorage.setItem(FS_FOCUS_KEY(index), '1');
+  log('🎯 Focus ON monitor', index+1);
+}
+
+function exitFocus(index){
+  const st = focusState.get(index);
+  if(!st) return;
+
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  if(!container) return;
+
+  const { overlay, gridRef } = st;
+
+  let grid = gridRef;
+  if(!grid || !grid.isConnected){
+    grid = document.createElement('div');
+    grid.className = 'grid-split';
+    grid.style.width = '100%';
+    grid.style.height = '100%';
+    container.innerHTML = '';
+    container.appendChild(grid);
+  }
+
+  const allTiles = Array.from(overlay.querySelectorAll('.split-tile'));
+  grid.innerHTML = '';
+  allTiles.forEach(t=> grid.appendChild(t));
+
+  overlay.remove();
+
+  grid.__dndAttached = false;
+  attachDnDToSplit(container);
+
+  focusState.delete(index);
+  localStorage.setItem(FS_FOCUS_KEY(index), '0');
+
+  // ✅ toolbar vuelve a autohide normal
+  pinToolbarForFocus(container, false);
+
+  const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+  applyGridLayout(container, layout);
+
+  log('🎯 Focus OFF monitor', index+1);
+}
+
+function toggleFocus(index, tile){
+  if(focusState.has(index)) exitFocus(index);
+  else enterFocus(index, tile);
+
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  const chip = container?.querySelector('.fs-chip');
+  if(chip) chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+}
+
+function forceSplitFromUrls(container, urls, mode){
+  const clean = Array.from(new Set((urls||[]).map(normalizeUrl))).filter(Boolean);
+  if(clean.length <= 1) return false;
+
+  let cols = computeAutoCols(clean.length);
+  if(mode === '2x2') cols = 2;
+  if(mode === '3col') cols = 3;
+
+  const gridStyle = `grid-template-columns: repeat(${cols}, 1fr); grid-auto-rows: minmax(200px, 1fr);`;
+
+  container.innerHTML = `
+    <div class="grid-split" style="${gridStyle}; width:100%; height:100%;">
+      ${clean.map((u,i) => `
+        <div class="split-tile" data-idx="${i}">
+          <div class="split-badge">↕ Arrastra · ${i+1}</div>
+          <iframe src="${u}" style="width:100%; height:100%; border:0;" frameborder="0" scrolling="auto"
+            allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+        </div>`).join("")}
+    </div>`;
+
+  attachDnDToSplit(container);
+  return true;
+}
+
+function ensureFsToolbar(index){
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  if(!container) return;
+
+  removeFsToolbar(container);
+
+  const keep = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+  const layout = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+
+  const tb = document.createElement('div');
+  tb.className = 'fs-toolbar';
+
+  const left = document.createElement('div');
+  left.className = 'fs-left';
+
+  const title = document.createElement('div');
+  title.className = 'fs-title';
+  title.textContent = `🖥️ Monitor ${index+1}`;
+
+  const chip = document.createElement('div');
+  chip.className = 'fs-chip';
+  chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+
+  left.appendChild(title);
+  left.appendChild(chip);
+
+  const actions = document.createElement('div');
+  actions.className = 'fs-actions';
+
+  const btnAuto = document.createElement('button');
+  btnAuto.className = 'fs-btn';
+  btnAuto.textContent = 'AUTO';
+
+  const btn2x2 = document.createElement('button');
+  btn2x2.className = 'fs-btn';
+  btn2x2.textContent = '2×2';
+
+  const btn3 = document.createElement('button');
+  btn3.className = 'fs-btn';
+  btn3.textContent = '3 COL';
+
+  const btnFocus = document.createElement('button');
+  btnFocus.className = 'fs-btn';
+  btnFocus.textContent = '🎯 Focus';
+
+  const setActive = (mode)=>{
+    [btnAuto,btn2x2,btn3].forEach(b=>b.classList.remove('active'));
+    if(mode === 'auto') btnAuto.classList.add('active');
+    if(mode === '2x2') btn2x2.classList.add('active');
+    if(mode === '3col') btn3.classList.add('active');
+  };
+
+  const applyMode = (mode)=>{
+    localStorage.setItem(FS_LAYOUT_KEY(index), mode);
+    setActive(mode);
+
+    const ok = applyGridLayout(container, mode);
+    if(!ok){
+      const keepNow = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+      if(keepNow){
+        const urls = getAllIframeUrls(container);
+        forceSplitFromUrls(container, urls, mode);
+      }
     }
+    chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+  };
+
+  btnAuto.onclick = ()=> applyMode('auto');
+  btn2x2.onclick  = ()=> applyMode('2x2');
+  btn3.onclick    = ()=> applyMode('3col');
+
+  btnFocus.onclick = ()=>{
+    const grid = container.querySelector('.grid-split');
+    if(!grid){
+      const urls = getAllIframeUrls(container);
+      if(urls.length > 1){
+        const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+        forceSplitFromUrls(container, urls, mode);
+      }
+    }
+    const firstTile = container.querySelector('.split-tile');
+    toggleFocus(index, firstTile);
+    chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+  };
+
+  const keepWrap = document.createElement('label');
+  keepWrap.className = 'fs-toggle';
+  keepWrap.innerHTML = `<input type="checkbox" ${keep?'checked':''}> Mantener Split`;
+  keepWrap.querySelector('input').addEventListener('change', (e)=>{
+    const on = !!e.target.checked;
+    localStorage.setItem(FS_KEEP_KEY(index), on ? '1' : '0');
+    if(on && !container.querySelector('.grid-split')){
+      const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+      const urls = getAllIframeUrls(container);
+      forceSplitFromUrls(container, urls, mode);
+    }
+    chip.textContent = getModeLabel(container) + (focusState.has(index) ? ' · FOCUS' : '');
+  });
+
+  const btnExit = document.createElement('button');
+  btnExit.className = 'fs-btn';
+  btnExit.textContent = '❌ Salir';
+  btnExit.onclick = ()=> toggleFullscreenGrafico(index);
+
+  actions.appendChild(btnAuto);
+  actions.appendChild(btn2x2);
+  actions.appendChild(btn3);
+  actions.appendChild(btnFocus);
+  actions.appendChild(keepWrap);
+  actions.appendChild(btnExit);
+
+  tb.appendChild(left);
+  tb.appendChild(actions);
+  container.appendChild(tb);
+
+  setActive(layout);
+  applyMode(layout);
+
+  // ✅ Auto-hide (solo si NO está en focus)
+  let hideTimer = null;
+  function showTb(){
+    if(tb.classList.contains('fs-pinned')) return;
+    tb.classList.remove('fs-hidden');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 1400);
+  }
+  function hideTb(){
+    if(tb.classList.contains('fs-pinned')) return;
+    clearTimeout(hideTimer);
+    tb.classList.add('fs-hidden');
+  }
+
+  // arranque oculto si no pinned
+  setTimeout(()=> { if(!tb.classList.contains('fs-pinned')) tb.classList.add('fs-hidden'); }, 900);
+
+  container.addEventListener('mousemove', (e)=>{
+    if(tb.classList.contains('fs-pinned')) return;
+    if(e.clientY < 110) showTb();
+  }, { passive:true });
+
+  tb.addEventListener('mouseenter', showTb);
+  tb.addEventListener('mouseleave', ()=>{ if(!tb.classList.contains('fs-pinned')) hideTimer = setTimeout(hideTb, 900); });
+
+  // Si focus ya estaba activo (por restore), pin
+  if(focusState.has(index) || localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
+    tb.classList.add('fs-pinned');
+    tb.classList.remove('fs-hidden');
+  }
+}
+
+function renderIframesInContainer(index, urls) {
+    const container = document.querySelector(`.player-container[data-index='${index}']`);
+    if (!container) return;
+  
+    const cleanUrls = (urls || []).map(normalizeUrl).filter(Boolean);
+    if (!cleanUrls.length) { alert("Selecciona al menos 1 sitio."); return; }
+  
+    const keepSplit = (localStorage.getItem(FS_KEEP_KEY(index)) || '0') === '1';
+    const split = ((document.getElementById(`splitMode${index}`)?.checked) || keepSplit) && cleanUrls.length > 1;
+  
+    if (split) {
+      const mode = localStorage.getItem(FS_LAYOUT_KEY(index)) || 'auto';
+      forceSplitFromUrls(container, cleanUrls, mode);
+  
+    } else if (cleanUrls.length === 1) {
+  
+      container.innerHTML = `
+        <iframe id="iframe-${index}-0"
+          src="${cleanUrls[0]}"
+          style="width:100%; height:100%; border:0;"
+          frameborder="0" scrolling="auto"
+          allow="fullscreen; clipboard-read; clipboard-write">
+        </iframe>`;
+  
+    } else {
+  
+      const tabs = cleanUrls.map((u, i) => {
+        let host = u;
+        try { host = new URL(u).hostname; } catch {}
+        return `<button class="tab ${i===0?'active':''}" data-tab="${i}" onclick="activarTab(${index}, ${i})">${host}</button>`;
+      }).join("");
+  
+      const iframes = cleanUrls.map((u, i) => `
+        <iframe id="iframe-${index}-${i}"
+          src="${u}"
+          style="width:100%; height:calc(100% - 46px); border:0; display:${i===0?'block':'none'};"
+          frameborder="0" scrolling="auto"
+          allow="fullscreen; clipboard-read; clipboard-write">
+        </iframe>`).join("");
+  
+      container.innerHTML = `
+        <div class="tabs" id="tabs-${index}">${tabs}</div>
+        <div style="width:100%; height:calc(100% - 46px);">${iframes}</div>`;
+    }
+  
+    // Si estás en fullscreen, asegura toolbar y drag
+    if (container.classList.contains('fullscreen-container')) {
+      ensureFsToolbar(index);
+      attachDnDToSplit(container);
+    }
+  }
+  
+
+function activarTab(index, i) {
+  const tabsWrap = document.getElementById(`tabs-${index}`); if (!tabsWrap) return;
+  tabsWrap.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  const target = tabsWrap.querySelector(`.tab[data-tab='${i}']`); if (target) target.classList.add("active");
+  const container = document.querySelector(`.player-container[data-index='${index}']`); if (!container) return;
+  container.querySelectorAll("iframe[id^='iframe-']").forEach((f, idx) => { f.style.display = (idx === i) ? "block" : "none"; });
+}
+
+function cargarGraficoTV(index) {
+  const seleccion = getSelectedSites(index);
+  const urls = (seleccion.length > 0) ? seleccion : ["https://cuervo-123.github.io/GLOBALTV4YOUPLUS/"];
+  renderIframesInContainer(index, urls);
+}
+function quitarGraficoTV(index) {
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  if (container) container.innerHTML = `<video id="player${index + 1}" controls></video>`;
+}
+
+/* ===== Fullscreen ===== */
+function requestFS(el){
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if(fn) { try{ fn.call(el); return true; } catch(e){ } }
+  return false;
+}
+function exitFS(){
+  const fn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+  if(fn) { try{ fn.call(document); return true; } catch(e){ } }
+  return false;
+}
+function isFSActive(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+}
+
+function toggleFullscreenGrafico(index) {
+  const container = document.querySelector(`.player-container[data-index='${index}']`);
+  if (!container) return;
+
+  const hasIframe = !!container.querySelector('iframe');
+  const hasVideo  = !!container.querySelector('video');
+  if (!hasIframe && !hasVideo) { alert("No hay contenido en esta pantalla."); return; }
+
+  const entering = !container.classList.contains('fullscreen-container');
+
+  if (entering) {
+    requestFS(container);
+    container.classList.add('fullscreen-container');
+    ensureFsToolbar(index);
+    attachDnDToSplit(container);
+
+    if(localStorage.getItem(FS_FOCUS_KEY(index)) === '1'){
+      const firstTile = container.querySelector('.split-tile');
+      if(firstTile) enterFocus(index, firstTile);
+    }
+  } else {
+    exitFocus(index);
+    removeFsToolbar(container);
+    container.classList.remove('fullscreen-container');
+    if (isFSActive()) exitFS();
+  }
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Escape') return;
+  const active = document.querySelector('.player-container.fullscreen-container');
+  if(active){
+    const idx = Number(active.getAttribute('data-index') || '-1');
+    if(idx >= 0) exitFocus(idx);
+    removeFsToolbar(active);
+    active.classList.remove('fullscreen-container');
+  }
+  if(isFSActive()) exitFS();
+});
+
+/* ===== Doble pantalla ===== */
+function activarPantallaCompletaSimulada(idContenedor) {
+  const el = document.getElementById(idContenedor);
+  if (!el) return;
+  el.classList.add('fullscreen-simulado');
+  el.style.display = 'flex';
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+}
+
+function salirPantallaCompletaSimulada(idContenedor) {
+  const el = document.getElementById(idContenedor);
+  if (!el) return;
+  el.classList.remove('fullscreen-simulado');
+  el.style.display = 'none';
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+}
+
+function abrirDosSitios(url1, url2) {
+  const f1 = document.getElementById('site1');
+  const f2 = document.getElementById('site2');
+  if (!f1 || !f2) return;
+
+  f1.classList.remove('cargado');
+  f2.classList.remove('cargado');
+
+  f1.addEventListener('load', () => f1.classList.add('cargado'), { once: true });
+  f2.addEventListener('load', () => f2.classList.add('cargado'), { once: true });
+
+  f1.src = (url1 || '').trim();
+  f2.src = (url2 || '').trim();
+
+  activarPantallaCompletaSimulada('wrapper-doble');
+}
+
+function abrirDesdeInputsDoble() {
+  const u1 = document.getElementById('dualUrl1').value.trim();
+  const u2 = document.getElementById('dualUrl2').value.trim();
+  if (!u1 || !u2) { alert('Escribe ambas URLs.'); return; }
+  abrirDosSitios(u1, u2);
+}
+
+
 
     /* ===== Stubs ===== */
     function guardarSeleccionSitios(index){ alert("Guardado: ya se guarda automático al seleccionar. ✅"); }
